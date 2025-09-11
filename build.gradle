@@ -1,17 +1,14 @@
 buildscript {
     repositories {
-
-        maven { url = 'https://maven.minecraftforge.net' }
-        maven { url = 'https://maven.parchmentmc.org' }
-        maven { url = "https://repo.spongepowered.org/maven" }
+        // These repositories are only for Gradle plugins, put any other repositories in the repository block further below
+        maven { url = 'https://repo.spongepowered.org/repository/maven-public/' }
         mavenCentral()
     }
     dependencies {
-        classpath group: 'net.minecraftforge.gradle', name: 'ForgeGradle', version: '6.0.+', changing: true
-        classpath 'org.parchmentmc:librarian:1.+'
         classpath 'org.spongepowered:mixingradle:0.7-SNAPSHOT'
     }
 }
+
 plugins {
     id 'eclipse'
     id 'idea'
@@ -20,9 +17,7 @@ plugins {
 }
 
 apply plugin: 'org.spongepowered.mixin'
-mixin {
-    add sourceSets.main, "beyondtheend.refmap.json"
-}
+
 group = mod_version
 version = mod_group_id
 
@@ -127,7 +122,7 @@ repositories {
 
 dependencies {
     minecraft "net.minecraftforge:forge:${minecraft_version}-${forge_version}"
-    implementation fg.deobf('com.github.AstianBK:Beyond_The_End:1.0.0')
+    implementation fg.deobf('com.github.AstianBK:Beyond_The_End:1.0.0') // Ejemplo: 'com.github.User:ModRepo:v1.0.0'
     implementation fg.deobf("curse.maven:stoneworks-852663:5049592")
     implementation fg.deobf("curse.maven:big-extras-forge-499948:4713352")
     implementation fg.deobf("curse.maven:cataclysmic-combat-880483:5790282")
@@ -158,7 +153,6 @@ dependencies {
     implementation fg.deobf("curse.maven:architectury-api-419699:5137942")
     implementation fg.deobf("curse.maven:endremastered-404183:4046639")
     implementation fg.deobf('software.bernie.geckolib:geckolib-forge-1.19:3.1.40')
-    implementation fg.deobf("curse.maven:incendium-591388:4452501")
 
     annotationProcessor 'org.spongepowered:mixin:0.8.5:processor'
 }
@@ -188,9 +182,7 @@ tasks.named('jar', Jar).configure {
                 "Implementation-Title": project.name,
                 "Implementation-Version": project.jar.archiveVersion,
                 "Implementation-Vendor": mod_authors,
-                "Implementation-Timestamp": new Date().format("yyyy-MM-dd'T'HH:mm:ssZ"),
-                "MixinConfigs": mod_id+".mixins.json"
-
+                "Implementation-Timestamp": new Date().format("yyyy-MM-dd'T'HH:mm:ssZ")
         ])
     }
 

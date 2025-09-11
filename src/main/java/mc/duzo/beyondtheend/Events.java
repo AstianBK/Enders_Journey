@@ -59,7 +59,6 @@ public class Events {
             Player player = event.getEntity();
             PortalPlayer.get(player).ifPresent(portalPlayer -> {
                 if(player instanceof ServerPlayer player1){
-                    EndersJourney.LOGGER.debug("Revoke");
                     int eyes=DimensionUtil.getEyesEarn(((AdvancementsProgressAccessor)player1.getAdvancements()).list(),portalPlayer);
                     portalPlayer.setEyesEarn(eyes);
                     portalPlayer.setListEye(new ArrayList<>());
@@ -285,7 +284,6 @@ public class Events {
             if(player instanceof ServerPlayer player1){
                 int eyes=DimensionUtil.getEyesEarn(((AdvancementsProgressAccessor)player1.getAdvancements()).list(),portalPlayer);
                 portalPlayer.setEyesEarn(eyes);
-                EndersJourney.LOGGER.debug("Hora clonar");
                 if(!player.level.isClientSide){
                     PacketHandler.sendToPlayer(new PacketSync(eyes), (ServerPlayer) player);
                 }
