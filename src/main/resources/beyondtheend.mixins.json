@@ -1,0 +1,18 @@
+{
+  "required": true,
+  "minVersion": "0.8",
+  "package": "mc.duzo.beyondtheend.mixin",
+  "compatibilityLevel": "JAVA_8",
+  "refmap": "beyondtheend.refmap.json",
+  "mixins": [
+    "common.AdvancementsProgressAccessor",
+    "common.EntityAccessor",
+    "common.ServerGamePacketListenerImplAccessor"
+  ],
+  "client": [
+    "client.SkyboxMixin"
+  ],
+  "injectors": {
+    "defaultRequire": 1
+  }
+}

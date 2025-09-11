@@ -1,0 +1,13 @@
+{
+  "type": "beyondtheend:the_forgotten_realm",
+  "generator": {
+    "type": "minecraft:flat",
+    "settings": {
+      "biome": "beyondtheend:the_forgotten_realm",
+      "lakes": false,
+      "features": false,
+      "layers": [],
+      "structure_overrides": []
+    }
+  }
+}

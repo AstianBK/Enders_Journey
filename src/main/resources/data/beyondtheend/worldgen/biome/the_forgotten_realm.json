@@ -1,0 +1,21 @@
+{
+  "temperature": 0.8,
+  "downfall": 0.4,
+  "precipitation": "none",
+  "effects": {
+    "sky_color": 10766591,
+    "fog_color": 8388863,
+    "water_color": 8421631,
+    "water_fog_color": 4194432,
+    "music": {
+      "sound": "beyondtheend:realm_song",
+      "min_delay": 0,
+      "max_delay": 0,
+      "replace_current_music": true
+    }
+  },
+  "spawners": {},
+  "spawn_costs": {},
+  "carvers": {},
+  "features": []
+}
