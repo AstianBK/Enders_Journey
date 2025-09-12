@@ -43,7 +43,6 @@ public class EndersJourney {
     public EndersJourney() {
         IEventBus bus = FMLJavaModLoadingContext.get().getModEventBus();
 
-        EnderDimensions.initialise();
         EnderSounds.register(bus);
         PacketHandler.registerMessages();
         BKBlocks.BLOCKS.register(bus);
