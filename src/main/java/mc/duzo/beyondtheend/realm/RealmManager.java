@@ -158,7 +158,7 @@ public class RealmManager implements Savable {
 		}
 
 		private void place(ServerLevel level, boolean inform) {
-			if (inform) {
+			if (inform && level!=null) {
 				for (ServerPlayer p : level.getServer().getPlayerList().getPlayers()) {
 					p.sendSystemMessage(Component.literal("Please wait while the structure is placed..."));
 				}
