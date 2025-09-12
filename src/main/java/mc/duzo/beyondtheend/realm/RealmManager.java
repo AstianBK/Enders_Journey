@@ -158,10 +158,12 @@ public class RealmManager implements Savable {
 		}
 
 		private void place(ServerLevel level, boolean inform) {
+			if(level==null)return;
 			if (inform && level!=null) {
 				for (ServerPlayer p : level.getServer().getPlayerList().getPlayers()) {
 					p.sendSystemMessage(Component.literal("Please wait while the structure is placed..."));
 				}
+
 			}
 
 			long start = System.currentTimeMillis();
@@ -194,7 +196,7 @@ public class RealmManager implements Savable {
 				level.setBlock(pos,block.getBlockState(),3);
 				ColumnBlockEntity blockEntity = (ColumnBlockEntity) level.getBlockEntity(pos);
 				if(blockEntity!=null){
-					blockEntity.setItem(itemStack.copy());
+					blockEntity.setItem(DimensionUtil.getItem(itemStack));
 					EndersJourney.LOGGER.debug("El item del otro bloque :"+blockEntity.getItem());
 				}
 			}));

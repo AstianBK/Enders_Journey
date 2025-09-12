@@ -48,7 +48,7 @@ public class DimensionUtil {
     public static boolean playerLeavingAether;
     public static boolean displayAetherTravel;
     public static int teleportationTimer;
-    public static final ImmutableMap<ItemStack,BlockPos> eyeItemForBlockPos = ImmutableMap.ofEntries(
+    public static final ImmutableMap<ResourceLocation,BlockPos> eyeItemForBlockPos = ImmutableMap.ofEntries(
             buildEntry(buildItem("black_eye"),new BlockPos(31,54,-12)),
             buildEntry(buildItem("witch_eye"),new BlockPos(31,54,12)),
             buildEntry(buildItem("cold_eye"),new BlockPos(38,54,-9)),
@@ -74,7 +74,7 @@ public class DimensionUtil {
             buildEntry(buildItem("desert_eye"),new BlockPos(-35,54,12)),
             buildEntry(buildItem("sculk_eye"),new BlockPos(-33,52,0))
             );
-    public static Map.Entry<ItemStack,BlockPos> buildEntry(ItemStack eye,BlockPos pos){
+    public static Map.Entry<ResourceLocation,BlockPos> buildEntry(ResourceLocation eye,BlockPos pos){
         return Map.entry(eye,pos);
     }
     public static final List<ResourceLocation> eyesLocation=List.of(build("black_eye"),
@@ -87,13 +87,16 @@ public class DimensionUtil {
     public static ResourceLocation build(String name){
         return new ResourceLocation("endrem","main/"+name);
     }
-    public static ItemStack buildItem(String name){
-        Holder<Item> holder= ForgeRegistries.ITEMS.getHolder(new ResourceLocation("endrem",name)).orElse(null);
+    public static ItemStack getItem(ResourceLocation name){
+        Holder<Item> holder= ForgeRegistries.ITEMS.getHolder(name).orElse(null);
         if(holder!=null){
             return new ItemStack(holder.get());
         }
         EndersJourney.LOGGER.debug("Item no found "+name);
         return ItemStack.EMPTY;
+    }
+    public static ResourceLocation buildItem(String name){
+        return new ResourceLocation("endrem",name);
     }
     public static int getEyesEarn(Map<Advancement, AdvancementProgress> map,PortalPlayer portalPlayer){
         List<Advancement> advancements=new ArrayList<>();

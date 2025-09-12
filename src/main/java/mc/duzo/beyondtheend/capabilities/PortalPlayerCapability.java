@@ -90,9 +90,10 @@ public class PortalPlayerCapability implements PortalPlayer{
 
                     Item stack=getItem(location);
                     BlockPos pos =null;
-                    for(Map.Entry<ItemStack,BlockPos> posEntry:DimensionUtil.eyeItemForBlockPos.entrySet()){
+                    for(Map.Entry<ResourceLocation,BlockPos> posEntry:DimensionUtil.eyeItemForBlockPos.entrySet()){
+                        ItemStack stack1 = DimensionUtil.getItem(posEntry.getKey());
                         ColumnBlockEntity block= (ColumnBlockEntity) level.getBlockEntity(posEntry.getValue());
-                        if(block!=null && posEntry.getKey().is(stack)){
+                        if(block!=null && stack1.is(stack)){
                             block.setChanged();
                         }
                     }
