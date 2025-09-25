@@ -94,7 +94,7 @@ public class PortalNetherBlock extends Block {
 
     private void handleTeleportation(Entity entity) {
         MinecraftServer server = entity.level.getServer();
-        ResourceKey<Level> destinationKey = entity.level.dimension() ==destinationDimension() ? returnDimension() : destinationDimension();
+        ResourceKey<Level> destinationKey = entity.level.dimension() == destinationDimension() ? returnDimension() : destinationDimension();
         if (server != null) {
             ServerLevel destinationLevel = server.getLevel(destinationKey);
             if (destinationLevel != null && !entity.isPassenger()) {

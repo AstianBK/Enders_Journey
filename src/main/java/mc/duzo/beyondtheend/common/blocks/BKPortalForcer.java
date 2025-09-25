@@ -1,37 +1,34 @@
 package mc.duzo.beyondtheend.common.blocks;
 
 import mc.duzo.beyondtheend.EndersJourney;
-import mc.duzo.beyondtheend.common.register.BkPoi;
+import mc.duzo.beyondtheend.common.DimensionUtil;
 import mc.duzo.beyondtheend.mixin.common.EntityAccessor;
 import mc.duzo.beyondtheend.world.dimension.EnderDimensions;
 import net.minecraft.BlockUtil;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
-import net.minecraft.core.Vec3i;
+import net.minecraft.core.Holder;
+import net.minecraft.core.Registry;
+import net.minecraft.resources.ResourceKey;
+import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
-import net.minecraft.server.level.TicketType;
-import net.minecraft.tags.BlockTags;
-import net.minecraft.tags.FluidTags;
+import net.minecraft.tags.BiomeTags;
 import net.minecraft.util.Mth;
+import net.minecraft.util.RandomSource;
 import net.minecraft.world.entity.Entity;
-import net.minecraft.world.entity.ai.village.poi.PoiManager;
-import net.minecraft.world.entity.ai.village.poi.PoiRecord;
-import net.minecraft.world.level.ChunkPos;
 import net.minecraft.world.level.Level;
+import net.minecraft.world.level.biome.Biome;
 import net.minecraft.world.level.block.Blocks;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.block.state.properties.BlockStateProperties;
 import net.minecraft.world.level.border.WorldBorder;
-import net.minecraft.world.level.dimension.DimensionType;
 import net.minecraft.world.level.levelgen.Heightmap;
 import net.minecraft.world.level.portal.PortalInfo;
-import net.minecraft.world.level.portal.PortalShape;
 import net.minecraft.world.phys.Vec3;
 import net.minecraftforge.common.util.ITeleporter;
 
 import javax.annotation.Nullable;
-import java.util.Comparator;
 import java.util.Optional;
 import java.util.function.Function;
 
@@ -65,29 +62,40 @@ public class BKPortalForcer implements ITeleporter {
     @Override
     public PortalInfo getPortalInfo(Entity entity, ServerLevel destinationLevel, Function<ServerLevel, PortalInfo> defaultPortalInfo) {
         EntityAccessor entityAccessor = (EntityAccessor) entity;
-        boolean isAether = destinationLevel.dimension() == PortalBlock.destinationDimension();
-        if (entity.level.dimension() != PortalBlock.destinationDimension() && !isAether) {
+        boolean isDestination = destinationLevel.dimension() == PortalBlock.destinationDimension();
+
+        if (entity.level.dimension() != PortalBlock.destinationDimension() && !isDestination) {
             return null;
         } else {
             WorldBorder worldBorder = destinationLevel.getWorldBorder();
-            return this.getExitPortal(entity, new BlockPos(level.random.nextInt(100)*level.random.nextInt(100),60,level.random.nextInt(100)*level.random.nextInt(100)) , worldBorder).map((rectangle) -> {
+
+            BlockPos finalPos = destinationLevel.dimension() == ResourceKey.create(Registry.DIMENSION_REGISTRY, new ResourceLocation(Level.OVERWORLD.location().toString())) ? findSafeSurface(level,level.random) : BlockPos.ZERO;
+            return this.getExitPortal(entity, finalPos, worldBorder).map((rectangle) -> {
                 BlockState blockState = this.level.getBlockState(entityAccessor.aether$getPortalEntrancePos());
                 Direction.Axis axis;
                 Vec3 vec3;
                 if (blockState.hasProperty(BlockStateProperties.HORIZONTAL_AXIS)) {
                     axis = blockState.getValue(BlockStateProperties.HORIZONTAL_AXIS);
-                    BlockUtil.FoundRectangle foundRectangle = BlockUtil.getLargestRectangleAround(entityAccessor.aether$getPortalEntrancePos(), axis, 21, Direction.Axis.Y, 21, (blockPos) -> this.level.getBlockState(blockPos) == blockState);
+                    BlockUtil.FoundRectangle foundRectangle = BlockUtil.getLargestRectangleAround(
+                            entityAccessor.aether$getPortalEntrancePos(),
+                            axis, 21, Direction.Axis.Y, 21,
+                            (blockPos) -> this.level.getBlockState(blockPos) == blockState
+                    );
                     vec3 = entityAccessor.callGetRelativePortalPosition(axis, foundRectangle);
                 } else {
                     axis = Direction.Axis.X;
                     vec3 = new Vec3(0, 0.0, 0.0);
                 }
-                if(destinationLevel.dimension()== EnderDimensions.REALM_KEY){
-                    return new PortalInfo(Vec3.atCenterOf(new BlockPos(0,143,0)), Vec3.ZERO, entity.getYRot(), entity.getXRot());
-                }else if(destinationLevel.dimension()!=Level.END){
-                    return PortalShape.createPortalInfo(destinationLevel, rectangle, axis, vec3,entity.getDimensions(entity.getPose()), entity.getDeltaMovement(), entity.getYRot(), entity.getXRot());
-                }else {
-                    return new PortalInfo(Vec3.atCenterOf(ServerLevel.END_SPAWN_POINT), Vec3.ZERO, entity.getYRot(), entity.getXRot());
+
+                if (destinationLevel.dimension() == EnderDimensions.REALM_KEY) {
+                    return new PortalInfo(Vec3.atCenterOf(new BlockPos(0, 143, 0)),
+                            Vec3.ZERO, entity.getYRot(), entity.getXRot());
+                } else if (destinationLevel.dimension() != Level.END) {
+                    return new PortalInfo(Vec3.atCenterOf(finalPos.above()),
+                            Vec3.ZERO, entity.getYRot(), entity.getXRot());
+                } else {
+                    return new PortalInfo(Vec3.atCenterOf(ServerLevel.END_SPAWN_POINT),
+                            Vec3.ZERO, entity.getYRot(), entity.getXRot());
                 }
             }).orElse(null);
         }
@@ -113,7 +121,23 @@ public class BKPortalForcer implements ITeleporter {
             return this.createPortal(ServerLevel.END_SPAWN_POINT,direction$axis);
         }
     }
+    public static BlockPos findSafeSurface(ServerLevel level, RandomSource random) {
+        for (int tries = 0; tries < 1000; tries++) {
+            int x = random.nextInt(2000) - 1000;
+            int z = random.nextInt(2000) - 1000;
 
+            for (int y = level.getMaxBuildHeight() - 1; y > level.getMinBuildHeight(); y--) {
+                BlockPos pos = new BlockPos(x, y, z);
+
+                if (!level.isEmptyBlock(pos) && level.canSeeSky(pos)) {
+                    EndersJourney.LOGGER.debug("Pos: " + pos);
+                    return pos.above();
+                }
+            }
+        }
+
+        return level.getSharedSpawnPos();
+    }
     public Optional<BlockUtil.FoundRectangle> createPortal(BlockPos pos, Direction.Axis axis) {
         Direction direction = Direction.get(Direction.AxisDirection.POSITIVE, axis);
         double d0 = -1.0;
