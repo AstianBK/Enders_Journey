@@ -1,6 +1,6 @@
 package mc.duzo.ender_journey;
 
-import com.klikli_dev.occultism.registry.OccultismBlocks;
+ import com.klikli_dev.occultism.registry.OccultismBlocks;
 import mc.duzo.ender_journey.capabilities.BkCapabilities;
 import mc.duzo.ender_journey.capabilities.PortalPlayer;
 import mc.duzo.ender_journey.capabilities.PortalPlayerCapability;
@@ -13,10 +13,12 @@ import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
 import net.minecraft.resources.ResourceKey;
 import net.minecraft.resources.ResourceLocation;
+import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.InteractionHand;
 import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.LivingEntity;
+import net.minecraft.world.entity.Mob;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
@@ -30,6 +32,7 @@ import net.minecraftforge.event.TickEvent;
 import net.minecraftforge.event.entity.EntityJoinLevelEvent;
 import net.minecraftforge.event.entity.EntityTravelToDimensionEvent;
 import net.minecraftforge.event.entity.living.LivingEvent;
+import net.minecraftforge.event.entity.living.LivingSpawnEvent;
 import net.minecraftforge.event.entity.player.AdvancementEvent;
 import net.minecraftforge.event.entity.player.PlayerEvent;
 import net.minecraftforge.event.entity.player.PlayerInteractEvent;
@@ -212,7 +215,6 @@ public class Events {
         Player player = event.player;
         DimensionUtil.travelling(player);
     }
-
 
     @SubscribeEvent
     public static void onWorldLoad(LevelEvent.Load event) {

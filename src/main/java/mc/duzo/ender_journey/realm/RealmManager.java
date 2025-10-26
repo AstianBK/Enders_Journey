@@ -1,10 +1,19 @@
 package mc.duzo.ender_journey.realm;
 
+import com.mojang.datafixers.util.Pair;
 import com.mojang.math.Vector3d;
 import com.supermartijn642.movingelevators.blocks.ControllerBlockEntity;
 import com.supermartijn642.movingelevators.elevator.ElevatorGroup;
 import com.supermartijn642.movingelevators.elevator.ElevatorGroupCapability;
 import eu.asangarin.meaddon.block.CustomRemoteControllerBlockEntity;
+import fr.shoqapik.btemobs.block.BteAbstractWorkBlock;
+import fr.shoqapik.btemobs.block.ExplorerTableBlock;
+import fr.shoqapik.btemobs.entity.BlacksmithEntity;
+import fr.shoqapik.btemobs.entity.DruidEntity;
+import fr.shoqapik.btemobs.entity.ExplorerEntity;
+import fr.shoqapik.btemobs.entity.WarlockEntity;
+import fr.shoqapik.btemobs.registry.BteMobsBlocks;
+import fr.shoqapik.btemobs.registry.BteMobsEntities;
 import mc.duzo.ender_journey.EndersJourney;
 import mc.duzo.ender_journey.common.DimensionUtil;
 import mc.duzo.ender_journey.common.block_entity.ColumnBlockEntity;
@@ -12,6 +21,7 @@ import mc.duzo.ender_journey.common.register.BKBlocks;
 import mc.duzo.ender_journey.data.Savable;
 import mc.duzo.ender_journey.world.dimension.EnderDimensions;
 import net.minecraft.core.BlockPos;
+import net.minecraft.core.Direction;
 import net.minecraft.core.Vec3i;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.nbt.NbtUtils;
@@ -19,16 +29,27 @@ import net.minecraft.network.chat.Component;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
+import net.minecraft.util.RandomSource;
+import net.minecraft.world.entity.Entity;
+import net.minecraft.world.entity.EntityType;
 import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.entity.player.Player;
+import net.minecraft.world.level.ServerLevelAccessor;
 import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.Blocks;
+import net.minecraft.world.level.block.MagmaBlock;
 import net.minecraft.world.level.block.Rotation;
+import net.minecraft.world.level.block.entity.BlockEntity;
+import net.minecraft.world.level.block.entity.RandomizableContainerBlockEntity;
+import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.levelgen.structure.templatesystem.StructurePlaceSettings;
 import net.minecraft.world.level.levelgen.structure.templatesystem.StructureTemplate;
+import net.minecraftforge.fml.ModList;
 import org.jetbrains.annotations.Nullable;
 
 import java.util.*;
+
+import static net.minecraft.world.level.levelgen.structure.templatesystem.StructureTemplate.processBlockInfos;
 
 public class RealmManager implements Savable {
 	private Structure structure;
@@ -179,10 +200,55 @@ public class RealmManager implements Savable {
 
 			placeColumn(level);
 
-
+			if(ModList.get().isLoaded("bte_mobs")){
+				this.spawnBlackSmith(level);
+				this.spawnDruid(level);
+				this.spawnWarlock(level);
+				this.spawnExplorer(level);
+			}
 			this.isPlaced = true;
 
 		}
+
+		public void spawnExplorer(ServerLevel level){
+			BlockPos pos = new BlockPos(3,132,-69);
+			ExplorerEntity entity = new ExplorerEntity(BteMobsEntities.EXPLORER_ENTITY.get(),level);
+			entity.setPos(3.5F,133,-69.5F);
+			entity.setTablePos(pos);
+			entity.setAttachFace(Direction.SOUTH);
+			level.addFreshEntity(entity);
+			BlockState table = BteMobsBlocks.EXPLORER_TABLE.get().defaultBlockState().setValue(ExplorerTableBlock.FACING, Direction.SOUTH);
+			level.setBlock(pos,table,3);
+		}
+
+		public void spawnDruid(ServerLevel level){
+			BlockPos pos = new BlockPos(-3,129,54);
+			DruidEntity entity = new DruidEntity(BteMobsEntities.DRUID_ENTITY.get(),level);
+			entity.setPos(-2.5F,129,53.9F);
+			entity.setAttachFace(Direction.NORTH);
+			entity.setYRot(Direction.NORTH.toYRot());
+			level.addFreshEntity(entity);
+			BlockState magmaBlock = BteMobsBlocks.ORIANA_OAK.get().defaultBlockState();
+			level.setBlock(pos,magmaBlock,3);
+			entity.tablePos = pos;
+		}
+
+		public void spawnWarlock(ServerLevel level){
+			WarlockEntity entity = new WarlockEntity(BteMobsEntities.WARLOCK_ENTITY.get(),level);
+			entity.setPos(-62.5F,134,0.5F);
+			entity.setAttachFace(Direction.EAST);
+			entity.setYRot(Direction.EAST.toYRot());
+			level.addFreshEntity(entity);
+		}
+		public void spawnBlackSmith(ServerLevel level){
+			Entity entity = new BlacksmithEntity(BteMobsEntities.BLACKSMITH_ENTITY.get(),level);
+			entity.setPos(62.5F,134,0.5F);
+			entity.setYBodyRot(Direction.WEST.toYRot());
+			level.addFreshEntity(entity);
+			BlockState magmaBlock = BteMobsBlocks.MAGMA_FORGE.get().defaultBlockState().setValue(BteAbstractWorkBlock.FACING,Direction.EAST);
+			level.setBlock(new BlockPos(61,133,0),magmaBlock,3);
+		}
+
 
 		private void placeColumn(ServerLevel level) {
 			DimensionUtil.eyeItemForBlockPos.forEach(((itemStack, pos) -> {
@@ -191,13 +257,23 @@ public class RealmManager implements Savable {
 				ColumnBlockEntity blockEntity = (ColumnBlockEntity) level.getBlockEntity(pos);
 				if(blockEntity!=null){
 					blockEntity.setItem(DimensionUtil.getItem(itemStack));
-					EndersJourney.LOGGER.debug("El item del otro bloque :"+blockEntity.getItem());
 				}
 			}));
+			for(BlockPos pos : BlockPos.betweenClosed(new BlockPos(-9,50,-10),new BlockPos(9,50,10))){
+				level.setBlock(pos, Blocks.END_STONE_BRICKS.defaultBlockState(),3);
+
+			}
 			for(BlockPos pos : BlockPos.betweenClosed(new BlockPos(-9,51,-10),new BlockPos(9,51,10))){
 				if(level.isEmptyBlock(pos)){
 					level.setBlock(pos, BKBlocks.THE_NEW_END_PORTAL.get().defaultBlockState(),3);
 				}
+			}
+			for(BlockPos pos : BlockPos.betweenClosed(new BlockPos(33,94,-3),new BlockPos(33,86,3))){
+				level.setBlock(pos, Blocks.OAK_PLANKS.defaultBlockState(),3);
+			}
+			for(BlockPos pos : BlockPos.betweenClosed(new BlockPos(-32,94,3),new BlockPos(-32,85,-4))){
+				level.setBlock(pos, Blocks.NETHER_BRICKS.defaultBlockState(),3);
+
 			}
 		}
 
@@ -271,15 +347,46 @@ public class RealmManager implements Savable {
 			BlockPos offset = new BlockPos(-size.getX() / 2+addX, height, -size.getZ() / 2 +addZ);
 
 
-			component.placeInWorld(
-					level,
-					offset,
-					offset,
-					settings,
-					level.getRandom(),
-					Block.UPDATE_KNOWN_SHAPE
-			);
+			placeInWorld(component,level, offset, offset, settings, level.getRandom(), Block.UPDATE_NONE | Block.UPDATE_SUPPRESS_LIGHT);
+
 			EndersJourney.LOGGER.info("Placed " + this + " at " + offset + " in " + (System.currentTimeMillis() - start) + "ms");
+		}
+
+		public boolean placeInWorld(StructureTemplate component, ServerLevelAccessor world, BlockPos templatePos, BlockPos offsetPos, StructurePlaceSettings settings, RandomSource random, int flags) {
+			if (component.palettes.isEmpty()) return false;
+
+			List<StructureTemplate.StructureBlockInfo> blocks = settings.getRandomPalette(component.palettes, templatePos).blocks();
+			if (blocks.isEmpty()) return false;
+			if (component.getSize().getX() < 1 || component.getSize().getY() < 1 || component.getSize().getZ() < 1) return false;
+
+			List<Pair<BlockPos, CompoundTag>> blockEntitiesToLoad = new ArrayList<>(blocks.size());
+
+			for (StructureTemplate.StructureBlockInfo info : processBlockInfos(world, templatePos, offsetPos, settings, blocks, component)) {
+				BlockPos pos = info.pos;
+				BlockState state = info.state.mirror(settings.getMirror()).rotate(settings.getRotation());
+
+				if (state.isAir()) continue;
+
+				world.setBlock(pos, state, flags & ~2);
+
+				if (info.nbt != null) {
+					blockEntitiesToLoad.add(Pair.of(pos, info.nbt));
+				}
+			}
+
+			for (Pair<BlockPos, CompoundTag> pair : blockEntitiesToLoad) {
+				BlockPos pos = pair.getFirst();
+				CompoundTag nbt = pair.getSecond();
+				BlockEntity be = world.getBlockEntity(pos);
+				if (be != null) {
+					if (be instanceof RandomizableContainerBlockEntity) {
+						nbt.putLong("LootTableSeed", random.nextLong());
+					}
+					be.load(nbt);
+				}
+			}
+
+			return true;
 		}
 
 		public void makeInitialIsland(ServerLevel level, long start){

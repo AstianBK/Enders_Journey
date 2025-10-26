@@ -59,15 +59,18 @@ public class EndersJourney {
 
     @SubscribeEvent
     public void onPlayerJoin(PlayerEvent.PlayerLoggedInEvent event) {
+        if(ServerData.get().getRealmManager()==null)return;
         ServerData.get().getRealmManager().getPlayer().onJoin(event.getEntity());
 
     }
     @SubscribeEvent
     public void onPlayerLeave(PlayerEvent.PlayerLoggedOutEvent event) {
+        if(ServerData.get().getRealmManager()==null)return;
         ServerData.get().getRealmManager().getPlayer().onLeave(event.getEntity());
     }
     @SubscribeEvent
     public void onPlayerRespawn(PlayerEvent.PlayerRespawnEvent event) {
+        if(ServerData.get().getRealmManager()==null)return;
         ServerData.get().getRealmManager().getPlayer().onRespawn(event.getEntity());
     }
     @SubscribeEvent

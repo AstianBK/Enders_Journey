@@ -1,7 +1,9 @@
 package mc.duzo.ender_journey.data.global.server;
 
 import mc.duzo.ender_journey.EndersJourney;
+import mc.duzo.ender_journey.common.DimensionUtil;
 import mc.duzo.ender_journey.realm.RealmManager;
+import mc.duzo.ender_journey.world.dimension.EnderDimensions;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.saveddata.SavedData;

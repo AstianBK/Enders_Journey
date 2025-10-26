@@ -6,7 +6,6 @@ import com.mojang.math.Vector3f;
 import mc.duzo.ender_journey.capabilities.PortalPlayer;
 import mc.duzo.ender_journey.common.DimensionUtil;
 import mc.duzo.ender_journey.common.block_entity.ColumnBlockEntity;
-import net.mehvahdjukaar.supplementaries.configs.ClientConfigs;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.renderer.MultiBufferSource;
 import net.minecraft.client.renderer.block.model.ItemTransforms;
@@ -34,7 +33,7 @@ public class ColumnRenderer <T extends ColumnBlockEntity> implements BlockEntity
                 p_112309_.pushPose();
                 p_112309_.translate(0.5F,2.5F,0.5F);
                 p_112309_.scale(0.5F,0.5F,0.5F);
-                int scale = (int)((Double) ClientConfigs.Blocks.PEDESTAL_SPEED.get() * 360.0);
+                int scale = (int)(2.0F * 360.0);
                 float angle = ((float)Math.floorMod(time, (long)scale) + Minecraft.getInstance().getPartialTick()) / (float)scale;
                 Quaternion rotation = Vector3f.YP.rotation((float)((double)angle * Math.PI * 10.0));
                 p_112309_.mulPose(rotation);

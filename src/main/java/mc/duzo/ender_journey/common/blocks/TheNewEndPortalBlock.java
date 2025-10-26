@@ -1,7 +1,7 @@
 package mc.duzo.ender_journey.common.blocks;
 
-import com.TBK.beyond_the_end.common.blocks.BKPortalForcer;
-import com.TBK.beyond_the_end.common.registry.BkDimension;
+
+import com.TBK.beyondtheend.common.registry.BkDimension;
 import mc.duzo.ender_journey.capabilities.BkCapabilities;
 import mc.duzo.ender_journey.capabilities.PortalPlayer;
 import mc.duzo.ender_journey.common.block_entity.TheNewEndBlockEntity;
