@@ -347,7 +347,7 @@ public class RealmManager implements Savable {
 			BlockPos offset = new BlockPos(-size.getX() / 2+addX, height, -size.getZ() / 2 +addZ);
 
 
-			placeInWorld(component,level, offset, offset, settings, level.getRandom(), Block.UPDATE_NONE | Block.UPDATE_SUPPRESS_LIGHT);
+			placeInWorld(component,level, offset, offset, settings, level.getRandom(), Block.UPDATE_ALL_IMMEDIATE);
 
 			EndersJourney.LOGGER.info("Placed " + this + " at " + offset + " in " + (System.currentTimeMillis() - start) + "ms");
 		}
