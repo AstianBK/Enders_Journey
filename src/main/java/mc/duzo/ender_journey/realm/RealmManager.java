@@ -346,7 +346,7 @@ public class RealmManager implements Savable {
 			Vec3i size = component.getSize();
 			BlockPos offset = new BlockPos(-size.getX() / 2+addX, height, -size.getZ() / 2 +addZ);
 
-			component.placeInWorld(level, offset, offset, settings, level.getRandom(), Block.UPDATE_ALL);
+			component.placeInWorld(level, offset, offset, settings, level.getRandom(), Block.UPDATE_KNOWN_SHAPE);
 			//placeInWorld(component,level, offset, offset, settings, level.getRandom(), Block.UPDATE_ALL_IMMEDIATE);
 
 			EndersJourney.LOGGER.info("Placed " + this + " at " + offset + " in " + (System.currentTimeMillis() - start) + "ms");
