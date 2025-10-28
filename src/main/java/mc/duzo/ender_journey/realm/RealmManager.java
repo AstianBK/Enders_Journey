@@ -42,6 +42,7 @@ import net.minecraft.world.level.block.Rotation;
 import net.minecraft.world.level.block.entity.BlockEntity;
 import net.minecraft.world.level.block.entity.RandomizableContainerBlockEntity;
 import net.minecraft.world.level.block.state.BlockState;
+import net.minecraft.world.level.levelgen.structure.BoundingBox;
 import net.minecraft.world.level.levelgen.structure.templatesystem.StructurePlaceSettings;
 import net.minecraft.world.level.levelgen.structure.templatesystem.StructureTemplate;
 import net.minecraftforge.fml.ModList;
@@ -346,9 +347,11 @@ public class RealmManager implements Savable {
 			Vec3i size = component.getSize();
 			BlockPos offset = new BlockPos(-size.getX() / 2+addX, height, -size.getZ() / 2 +addZ);
 
-			component.placeInWorld(level, offset, offset, settings, level.getRandom(), Block.UPDATE_KNOWN_SHAPE);
-			//placeInWorld(component,level, offset, offset, settings, level.getRandom(), Block.UPDATE_ALL_IMMEDIATE);
+			component.placeInWorld(level, offset, offset, settings, level.getRandom(), Block.UPDATE_NONE);
+			BoundingBox box = component.getBoundingBox(new StructurePlaceSettings(),offset);
 
+			BlockPos.betweenClosed(box.minX(), box.minY(), box.minZ(), box.maxX(), box.maxY(), box.maxZ())
+					.forEach(p -> level.getChunkSource().getLightEngine().checkBlock(p));
 			EndersJourney.LOGGER.info("Placed " + this + " at " + offset + " in " + (System.currentTimeMillis() - start) + "ms");
 		}
 

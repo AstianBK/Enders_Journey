@@ -60,6 +60,7 @@ public class EndersJourney {
     @SubscribeEvent
     public void onPlayerJoin(PlayerEvent.PlayerLoggedInEvent event) {
         if(ServerData.get().getRealmManager()==null)return;
+
         ServerData.get().getRealmManager().getPlayer().onJoin(event.getEntity());
 
     }
