@@ -34,6 +34,7 @@ import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.EntityType;
 import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.entity.player.Player;
+import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.level.ServerLevelAccessor;
 import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.Blocks;
@@ -248,6 +249,8 @@ public class RealmManager implements Savable {
 			level.addFreshEntity(entity);
 			BlockState magmaBlock = BteMobsBlocks.MAGMA_FORGE.get().defaultBlockState().setValue(BteAbstractWorkBlock.FACING,Direction.EAST);
 			level.setBlock(new BlockPos(61,133,0),magmaBlock,3);
+			level.setBlock(new BlockPos(61,133,1), Blocks.AIR.defaultBlockState(),3);
+			level.setBlock(new BlockPos(61,133,-1),Blocks.AIR.defaultBlockState(),3);
 		}
 
 
