@@ -1,20 +1,25 @@
 package mc.duzo.ender_journey.common.blocks;
 
 import mc.duzo.ender_journey.EndersJourney;
+import mc.duzo.ender_journey.data.global.server.ServerData;
 import mc.duzo.ender_journey.mixin.common.EntityAccessor;
+import mc.duzo.ender_journey.realm.RealmManager;
 import mc.duzo.ender_journey.world.dimension.EnderDimensions;
 import net.minecraft.BlockUtil;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
+import net.minecraft.core.Holder;
 import net.minecraft.core.Registry;
 import net.minecraft.resources.ResourceKey;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
+import net.minecraft.tags.BiomeTags;
 import net.minecraft.util.Mth;
 import net.minecraft.util.RandomSource;
 import net.minecraft.world.entity.Entity;
 import net.minecraft.world.level.Level;
+import net.minecraft.world.level.biome.Biome;
 import net.minecraft.world.level.block.Blocks;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.block.state.properties.BlockStateProperties;
@@ -64,8 +69,15 @@ public class BKPortalForcer implements ITeleporter {
             return null;
         } else {
             WorldBorder worldBorder = destinationLevel.getWorldBorder();
-
-            BlockPos finalPos = destinationLevel.dimension() == ResourceKey.create(Registry.DIMENSION_REGISTRY, new ResourceLocation(Level.OVERWORLD.location().toString())) ? findSafeSurface(level,level.random) : BlockPos.ZERO;
+            BlockPos pos;
+            EndersJourney.LOGGER.debug("Dimesion"+level.dimension());
+            if(ServerData.get().getRealmManager().getPlayer().getPlayerForUUID(entity.getUUID()).getTpPosForDimension(level.dimension().toString())!=null){
+                pos = ServerData.get().getRealmManager().getPlayer().getPlayerForUUID(entity.getUUID()).getTpPosForDimension(level.dimension().toString());
+            }else {
+                pos = findSafeSurface(level,level.random);
+                ServerData.get().getRealmManager().getPlayer().getPlayerForUUID(entity.getUUID()).setTpPosForDimension(pos,level.dimension().toString());
+            }
+            BlockPos finalPos = pos;
             return this.getExitPortal(entity, finalPos, worldBorder).map((rectangle) -> {
                 BlockState blockState = this.level.getBlockState(entityAccessor.aether$getPortalEntrancePos());
                 Direction.Axis axis;
@@ -118,15 +130,59 @@ public class BKPortalForcer implements ITeleporter {
         }
     }
     public static BlockPos findSafeSurface(ServerLevel level, RandomSource random) {
+        if(level.dimension()==Level.NETHER){
+            return findSafeNetherPos(level,random);
+        }
+        BlockPos.MutableBlockPos pos = new BlockPos.MutableBlockPos();
+
+        int radius = 200;
+
         for (int tries = 0; tries < 1000; tries++) {
+
+            int x = random.nextInt(radius * 2) - radius;
+            int z = random.nextInt(radius * 2) - radius;
+
+            int y = level.getHeight(Heightmap.Types.WORLD_SURFACE, x, z);
+
+
+            pos.set(x, y, z);
+
+            Holder<Biome> holder = level.getBiome(pos);
+            if (tries % 200 == 0) {
+                radius += 200;
+            }
+            if(holder.is(BiomeTags.IS_OCEAN) || holder.is(BiomeTags.IS_RIVER) || holder.is(BiomeTags.IS_DEEP_OCEAN))continue;
+            if (level.getBlockState(pos.above()).isAir() && level.canSeeSky(pos.above())) {
+                return new BlockPos(pos.getX(),pos.getY(),pos.getZ());
+            }
+
+        }
+
+        return level.getSharedSpawnPos();
+    }
+
+    public static BlockPos findSafeNetherPos(ServerLevel level, RandomSource random) {
+        BlockPos.MutableBlockPos pos = new BlockPos.MutableBlockPos();
+
+        for (int tries = 0; tries < 3000; tries++) {
+
             int x = random.nextInt(2000) - 1000;
             int z = random.nextInt(2000) - 1000;
 
-            for (int y = level.getMaxBuildHeight() - 1; y > level.getMinBuildHeight(); y--) {
-                BlockPos pos = new BlockPos(x, y, z);
+            int y = 121;
+            pos.set(x, y, z);
 
-                if (!level.isEmptyBlock(pos) && level.canSeeSky(pos)) {
-                    return pos.above();
+            for (int dy = y; dy > level.getMinBuildHeight() + 5; dy--) {
+
+                pos.setY(dy);
+
+                boolean solidFloor = level.getBlockState(pos).getMaterial().isSolid();
+                boolean air1 = level.getBlockState(pos.above()).isAir();
+                boolean air2 = level.getBlockState(pos.above(2)).isAir();
+                boolean air3 = level.getBlockState(pos.above(3)).isAir();
+
+                if (solidFloor && air1 && air2 && air3) {
+                    return pos.above().immutable();
                 }
             }
         }

@@ -24,8 +24,10 @@ import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
 import net.minecraft.core.Vec3i;
 import net.minecraft.nbt.CompoundTag;
+import net.minecraft.nbt.ListTag;
 import net.minecraft.nbt.NbtUtils;
 import net.minecraft.network.chat.Component;
+import net.minecraft.resources.ResourceKey;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
@@ -226,7 +228,7 @@ public class RealmManager implements Savable {
 		public void spawnDruid(ServerLevel level){
 			BlockPos pos = new BlockPos(-3,129,54);
 			DruidEntity entity = new DruidEntity(BteMobsEntities.DRUID_ENTITY.get(),level);
-			entity.setPos(-2.5F,129,53.9F);
+			entity.setPos(-2.5F,129,53.5F);
 			entity.setAttachFace(Direction.NORTH);
 			entity.setYRot(Direction.NORTH.toYRot());
 			level.addFreshEntity(entity);
@@ -478,7 +480,7 @@ public class RealmManager implements Savable {
 				// Assume we don´t need to adjust their spawnpoint + teleport.
 				return;
 			}
-			if (this.parent.getStructure().getCentre() == null) return;
+			if (this.parent.getStructure().getCentre() == null && getDimension()==null) return;
 
 			this.parent.teleport(player);
 			player.setRespawnPosition(RealmManager.getDimension().dimension(), this.parent.getStructure().getCentre(), 0, true, false);
@@ -500,6 +502,9 @@ public class RealmManager implements Savable {
 
 			EndersJourney.LOGGER.info("Verified all players in " + (System.currentTimeMillis() - start) + "ms");
 		}
+		public RealmPlayer getPlayerForUUID(UUID uuid){
+			return this.seen.get(uuid);
+		}
 
 		@Override
 		public CompoundTag serialise() {
@@ -508,6 +513,7 @@ public class RealmManager implements Savable {
 			CompoundTag seenData = new CompoundTag();
 			this.seen.forEach((uuid, realmPlayer) -> seenData.put(uuid.toString(), realmPlayer.serialise()));
 			data.put("Seen", seenData);
+			EndersJourney.LOGGER.debug("Serialise Seen list :"+seenData);
 
 			return data;
 		}
@@ -516,14 +522,17 @@ public class RealmManager implements Savable {
 		public void deserialise(CompoundTag data) {
 			this.seen = new HashMap<>();
 			CompoundTag seenData = data.getCompound("Seen");
-			seenData.getAllKeys().forEach(key -> this.seen.put(UUID.fromString(key), new RealmPlayer(seenData.getCompound(key))));
+			EndersJourney.LOGGER.debug("deserialise Seen list :"+seenData);
+			seenData.getAllKeys().forEach(key -> this.seen.put(UUID.fromString(key), new RealmPlayer(UUID.fromString(key),seenData.getCompound(key))));
 		}
 	}
 
 	public static class RealmPlayer implements Savable { // unnecessary now
 		private final UUID id;
 		private ServerPlayer playerCache;
-
+		private boolean firstTp = true;
+		private Map<String,BlockPos> dimensionTp = new HashMap<>();
+		private BlockPos tpPos = null;
 		public RealmPlayer(UUID id) {
 			this.id = id;
 		}
@@ -532,8 +541,9 @@ public class RealmManager implements Savable {
 
 			this.playerCache = player;
 		}
-		public RealmPlayer(CompoundTag data) {
-			this(data.getUUID("ID"));
+		public RealmPlayer(UUID uuid,CompoundTag data) {
+			this(uuid);
+			this.deserialise(data);
 		}
 
 		public ServerPlayer asPlayer() {
@@ -541,18 +551,57 @@ public class RealmManager implements Savable {
 
 			return EndersJourney.getServer().getPlayerList().getPlayer(this.id);
 		}
+		public void setTpPosForDimension(BlockPos pos,String dimension){
+			if(dimensionTp.containsKey(dimension)){
+				Map<String,BlockPos> var = new HashMap<>();
+				for (Map.Entry<String,BlockPos> entry : dimensionTp.entrySet()){
+					if(!dimension.equals(entry.getKey())){
+						var.put(entry.getKey(),entry.getValue());
+					}
+				}
+				var.put(dimension,pos);
+				dimensionTp = var;
+			}else {
+				dimensionTp.put(dimension,pos);
+			}
+		}
+		public BlockPos getTpPosForDimension(String dimension){
+			return this.dimensionTp.containsKey(dimension) ? this.dimensionTp.get(dimension) : null;
+		}
 
 		@Override
 		public CompoundTag serialise() {
 			CompoundTag data = new CompoundTag();
 
 			data.putUUID("ID", this.id);
+			if(!this.dimensionTp.isEmpty()){
+				ListTag tags = new ListTag();
+				this.dimensionTp.forEach((s, pos) -> {
+					CompoundTag nbt = new CompoundTag();
+					nbt.put("pos",NbtUtils.writeBlockPos(pos));
+					nbt.putString("key",s);
+					tags.add(nbt);
+				});
+				data.put("dimensionTps",tags);
+			}
+			EndersJourney.LOGGER.debug("save :"+data);
 
 			return data;
 		}
 
 		@Override
 		public void deserialise(CompoundTag data) {
+			EndersJourney.LOGGER.debug("read :"+data);
+			if(data.contains("dimensionTps")){
+				Map<String,BlockPos> var = new HashMap<>();
+
+				ListTag tags = data.getList("dimensionTps",10);
+				for(int i = 0 ; i < tags.size() ; i++){
+					CompoundTag tag = tags.getCompound(i);
+					var.put(tag.getString("key"),NbtUtils.readBlockPos(tag.getCompound("pos")));
+				}
+				this.dimensionTp = var;
+			}
 		}
 	}
 }
