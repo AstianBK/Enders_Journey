@@ -7,6 +7,8 @@ import net.minecraft.network.FriendlyByteBuf;
 import net.minecraft.network.PacketListener;
 import net.minecraft.network.protocol.Packet;
 import net.minecraft.world.entity.player.Player;
+import net.minecraftforge.api.distmarker.Dist;
+import net.minecraftforge.api.distmarker.OnlyIn;
 import net.minecraftforge.network.NetworkEvent;
 
 import java.util.function.Supplier;
@@ -27,13 +29,15 @@ public class PacketSync implements Packet<PacketListener> {
     }
 
     public void handle(Supplier<NetworkEvent.Context> context) {
-        context.get().enqueueWork(() ->{
-            Player player=Minecraft.getInstance().player;
-            assert player!=null;
-            var portalPlayer=PortalPlayer.get(player).orElse(null);
-            portalPlayer.setEyesEarn(this.eye);
-        });
+        context.get().enqueueWork(this::clientHandle);
         context.get().setPacketHandled(true);
+    }
+    @OnlyIn(Dist.CLIENT)
+    public void clientHandle(){
+        Player player=Minecraft.getInstance().player;
+        assert player!=null;
+        var portalPlayer=PortalPlayer.get(player).orElse(null);
+        portalPlayer.setEyesEarn(this.eye);
     }
 
 

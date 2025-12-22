@@ -7,6 +7,8 @@ import net.minecraft.network.FriendlyByteBuf;
 import net.minecraft.network.PacketListener;
 import net.minecraft.network.protocol.Packet;
 import net.minecraft.world.level.Level;
+import net.minecraftforge.api.distmarker.Dist;
+import net.minecraftforge.api.distmarker.OnlyIn;
 import net.minecraftforge.network.NetworkEvent;
 
 import java.util.List;
@@ -24,23 +26,23 @@ public class PacketUpdateChuck implements Packet<PacketListener> {
     @Override
     public void write(FriendlyByteBuf buf) {
     }
-
     public void handle(Supplier<NetworkEvent.Context> context) {
-        context.get().enqueueWork(() ->{
-            Level level= Minecraft.getInstance().level;
-            if(level!=null){
-                for (BlockPos pos1:positions){
-                    int sectionX = pos1.getX() >> 4; // Divide entre 16
-                    int sectionY = pos1.getY() >> 4;  // Divide entre 16
-                    int sectionZ = pos1.getZ() >> 4; // Divide entre 16
-
-                    Minecraft.getInstance().levelRenderer.setSectionDirty(sectionX,sectionY,sectionZ);
-                }
-            }
-        });
+        context.get().enqueueWork(this::clientHandle);
         context.get().setPacketHandled(true);
     }
+    @OnlyIn(Dist.CLIENT)
+    public void clientHandle(){
+        Level level= Minecraft.getInstance().level;
+        if(level!=null){
+            for (BlockPos pos1:positions){
+                int sectionX = pos1.getX() >> 4; // Divide entre 16
+                int sectionY = pos1.getY() >> 4;  // Divide entre 16
+                int sectionZ = pos1.getZ() >> 4; // Divide entre 16
 
+                Minecraft.getInstance().levelRenderer.setSectionDirty(sectionX,sectionY,sectionZ);
+            }
+        }
+    }
 
     @Override
     public void handle(PacketListener p_131342_) {
