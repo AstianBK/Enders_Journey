@@ -5,11 +5,15 @@ import mc.duzo.ender_journey.capabilities.BkCapabilities;
 import mc.duzo.ender_journey.capabilities.PortalPlayer;
 import mc.duzo.ender_journey.capabilities.PortalPlayerCapability;
 import mc.duzo.ender_journey.common.DimensionUtil;
-import mc.duzo.ender_journey.mixin.common.AdvancementsProgressAccessor;
+ import mc.duzo.ender_journey.common.blocks.PortalNetherBlock;
+ import mc.duzo.ender_journey.common.blocks.TheNewEndPortalBlock;
+ import mc.duzo.ender_journey.common.register.BKBlocks;
+ import mc.duzo.ender_journey.mixin.common.AdvancementsProgressAccessor;
 import mc.duzo.ender_journey.network.PacketHandler;
 import mc.duzo.ender_journey.network.message.PacketSync;
 import mc.duzo.ender_journey.network.message.PacketUpdateChuck;
-import net.minecraft.core.BlockPos;
+ import mc.duzo.ender_journey.world.dimension.EnderDimensions;
+ import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
 import net.minecraft.resources.ResourceKey;
 import net.minecraft.resources.ResourceLocation;
@@ -24,7 +28,8 @@ import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.LevelAccessor;
-import net.minecraft.world.level.block.state.BlockState;
+ import net.minecraft.world.level.block.Blocks;
+ import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.block.state.properties.BlockStateProperties;
 import net.minecraft.world.level.material.FluidState;
 import net.minecraftforge.event.AttachCapabilitiesEvent;
@@ -58,7 +63,7 @@ public class Events {
     }
     @SubscribeEvent
     public static void onAdvancementRevoke(AdvancementEvent.AdvancementProgressEvent event){
-        if(event.getProgressType()== AdvancementEvent.AdvancementProgressEvent.ProgressType.REVOKE){
+        if(event.getProgressType() == AdvancementEvent.AdvancementProgressEvent.ProgressType.REVOKE){
             Player player = event.getEntity();
             PortalPlayer.get(player).ifPresent(portalPlayer -> {
                 if(player instanceof ServerPlayer player1){
@@ -66,9 +71,9 @@ public class Events {
                     portalPlayer.setEyesEarn(eyes);
                     portalPlayer.setListEye(new ArrayList<>());
                     DimensionUtil.getEyesEarn(((AdvancementsProgressAccessor)player1.getAdvancements()).list(),portalPlayer);
+
                     if(!player.level.isClientSide){
                         PacketHandler.sendToPlayer(new PacketSync(eyes), player1);
-                        PacketHandler.sendToPlayer(new PacketUpdateChuck(),player1);
                     }
                 }
 
@@ -87,6 +92,35 @@ public class Events {
                         });
                     });
                     placeOrReloadStorage(portalPlayer.getPlayer().level,portalPlayer.getEyesEarn());
+                    int eyes = portalPlayer.getEyesEarn();
+                    ServerLevel level=EndersJourney.getServer().getLevel(EnderDimensions.REALM_KEY);
+                    if(level!=null){
+                        if (eyes==8){
+                            EndersJourney.LOGGER.debug("navidad :"+eyes);
+                            for (BlockPos pos : BlockPos.betweenClosed(-31,84,-4,-31,94,3)){
+                                if(level.isEmptyBlock(pos) || level.getBlockState(pos).is(BKBlocks.PORTAL_NETHER.get())){
+                                    EndersJourney.LOGGER.debug("xd :"+pos);
+                                    level.setBlock(pos, BKBlocks.PORTAL_NETHER.get().defaultBlockState().setValue(PortalNetherBlock.AXIS, Direction.Axis.Z).setValue(PortalNetherBlock.ENABLED,true),3);
+                                }
+                            }
+                        }else if(eyes==16){
+                            for (BlockPos pos : BlockPos.betweenClosed(-4,85,28,4,94,28)){
+                                if(level.isEmptyBlock(pos) || level.getBlockState(pos).is(BKBlocks.PORTAL.get())){
+                                    level.setBlock(pos, BKBlocks.PORTAL.get().defaultBlockState().setValue(TheNewEndPortalBlock.ENABLED,true),3);
+                                }
+                            }
+                        }else if(eyes==24){
+                            for(BlockPos pos : BlockPos.betweenClosed(new BlockPos(-9,51,-10),new BlockPos(9,51,10))){
+                                if(level.isEmptyBlock(pos)){
+                                    level.setBlock(pos, BKBlocks.THE_NEW_END_PORTAL.get().defaultBlockState().setValue(TheNewEndPortalBlock.ENABLED,true),3);
+                                }
+                            }
+                        }
+                        PacketHandler.sendToPlayer(new PacketUpdateChuck(), (ServerPlayer) event.getEntity());
+
+
+                    }
+
                 }
             });
         }

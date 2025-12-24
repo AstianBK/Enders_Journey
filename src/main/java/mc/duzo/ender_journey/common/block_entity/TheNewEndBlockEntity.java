@@ -1,6 +1,7 @@
 package mc.duzo.ender_journey.common.block_entity;
 
 import mc.duzo.ender_journey.capabilities.PortalPlayer;
+import mc.duzo.ender_journey.common.blocks.TheNewEndPortalBlock;
 import mc.duzo.ender_journey.common.register.BKBlockEntity;
 import net.minecraft.client.Minecraft;
 import net.minecraft.core.BlockPos;
@@ -19,10 +20,7 @@ public class TheNewEndBlockEntity extends TheEndPortalBlockEntity {
     }
 
     public boolean shouldRenderFace(Direction p_59980_) {
-        if(Minecraft.getInstance().player==null){
-            return false;
-        }
-        boolean flag=PortalPlayer.get(Minecraft.getInstance().player).orElse(null).getEyesEarn()>=24;
+        boolean flag=getBlockState().getValue(TheNewEndPortalBlock.ENABLED);
         return p_59980_.getAxis() == Direction.Axis.Y && flag;
     }
 }

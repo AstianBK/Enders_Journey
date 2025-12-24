@@ -16,7 +16,7 @@ import java.util.Set;
 public class BkPoi {
     public static final DeferredRegister<PoiType> POI = DeferredRegister.create(ForgeRegistries.POI_TYPES, EndersJourney.MODID);
 
-    public static final RegistryObject<PoiType> PORTAL = POI.register("portal", () -> new PoiType(getBlockStates(), 0, 1));
+    public static final RegistryObject<PoiType> PORTAL = POI.register("portal_poi", () -> new PoiType(getBlockStates(), 0, 1));
 
     public static final RegistryObject<PoiType> THE_NEW_END_PORTAL = POI.register("the_new_end_portal", () -> new PoiType(getBlockStates(BKBlocks.THE_NEW_END_PORTAL.get()), 0, 1));
 
@@ -25,7 +25,8 @@ public class BkPoi {
         return ImmutableSet.copyOf(block.getStateDefinition().getPossibleStates());
     }
     private static Set<BlockState> getBlockStates() {
-        List<BlockState> states = new ArrayList<>(BKBlocks.PORTAL.get().getStateDefinition().getPossibleStates());
+        List<BlockState> states = new ArrayList<>();
+        states.addAll(BKBlocks.PORTAL.get().getStateDefinition().getPossibleStates());
         states.addAll(BKBlocks.PORTAL_NETHER.get().getStateDefinition().getPossibleStates());
         states.addAll(BKBlocks.PORTAL_OVERWORLD.get().getStateDefinition().getPossibleStates());
         return ImmutableSet.copyOf(states);

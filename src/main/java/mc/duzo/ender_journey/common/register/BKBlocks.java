@@ -28,7 +28,7 @@ public class BKBlocks {
     public static final RegistryObject<Block> THE_NEW_END_PORTAL = registerBlock("the_new_end_portal",
             () -> new TheNewEndPortalBlock(BlockBehaviour.Properties.copy(Blocks.END_PORTAL))
     );
-    public static final RegistryObject<Block> PORTAL = registerBlock("portal",
+    public static final RegistryObject<Block> PORTAL = registerBlock("portal_end",
             () -> new PortalBlock(BlockBehaviour.Properties.copy(Blocks.END_PORTAL))
     );
     public static final RegistryObject<Block> PORTAL_OVERWORLD = registerBlock("portal_overworld",
