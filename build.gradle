@@ -117,7 +117,7 @@ dependencies {
     minecraft "net.minecraftforge:forge:${minecraft_version}-${forge_version}"
     //runtimeOnly files('libs/BeyondTheEndMobs-1.11.0.jar')
     //runtimeOnly files('libs/beyondtheend-1.0.0.jar')
-    implementation fg.deobf('fr.shoqapik:BeyondTheEndMobs:1.11.0')
+    implementation fg.deobf('fr.shoqapik:BeyondTheEndMobs:1.11.1')
     implementation fg.deobf('com.TBK:beyondtheend:1.0.0')
     implementation fg.deobf("com.patataprojects:anvilchanges:0.5.1-1.19.2")
 
