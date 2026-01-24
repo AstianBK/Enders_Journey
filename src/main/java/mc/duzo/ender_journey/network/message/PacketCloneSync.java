@@ -74,7 +74,6 @@ public class PacketCloneSync implements Packet<PacketListener> {
         var portalPlayer=PortalPlayer.get(player).orElse(null);
         portalPlayer.getList().clear();
         portalPlayer.setListEye(this.location);
-
     }
 
 
