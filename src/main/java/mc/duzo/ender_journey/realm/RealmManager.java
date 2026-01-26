@@ -462,8 +462,9 @@ public class RealmManager implements Savable {
 		}
 
 		public void onJoin(Player player) {
-			if (player instanceof ServerPlayer) {
-				this.runSpawnLogic((ServerPlayer) player);
+			if (player instanceof ServerPlayer serverPlayer) {
+				this.runSpawnLogic(serverPlayer);
+
 			}
 		}
 		public void onLeave(Player player) {

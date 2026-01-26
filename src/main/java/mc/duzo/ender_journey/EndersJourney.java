@@ -13,12 +13,14 @@ import mc.duzo.ender_journey.sound.EnderSounds;
 import net.minecraft.core.BlockPos;
 import net.minecraft.server.MinecraftServer;
 import net.minecraftforge.common.MinecraftForge;
+import net.minecraftforge.event.TickEvent;
 import net.minecraftforge.event.entity.living.LivingSpawnEvent;
 import net.minecraftforge.event.entity.player.PlayerEvent;
 import net.minecraftforge.eventbus.api.Event;
 import net.minecraftforge.eventbus.api.IEventBus;
 import net.minecraftforge.eventbus.api.SubscribeEvent;
 import net.minecraftforge.fml.DistExecutor;
+import net.minecraftforge.fml.LogicalSide;
 import net.minecraftforge.fml.common.Mod;
 import net.minecraftforge.fml.event.lifecycle.FMLClientSetupEvent;
 import net.minecraftforge.fml.event.lifecycle.FMLCommonSetupEvent;
@@ -63,6 +65,15 @@ public class EndersJourney {
 
         ServerData.get().getRealmManager().getPlayer().onJoin(event.getEntity());
 
+    }
+
+    @SubscribeEvent
+    public void onWorldTick(TickEvent.LevelTickEvent event) {
+        if (event.side == LogicalSide.SERVER && event.phase == TickEvent.Phase.END) {
+            if(ServerData.get().getRealmManager()==null)return;
+
+            ServerData.get().getRealmManager().getStructure().verify();
+        }
     }
     @SubscribeEvent
     public void onPlayerLeave(PlayerEvent.PlayerLoggedOutEvent event) {
