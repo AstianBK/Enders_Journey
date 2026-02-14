@@ -14,6 +14,7 @@ import fr.shoqapik.btemobs.entity.ExplorerEntity;
 import fr.shoqapik.btemobs.entity.WarlockEntity;
 import fr.shoqapik.btemobs.registry.BteMobsBlocks;
 import fr.shoqapik.btemobs.registry.BteMobsEntities;
+import mc.duzo.ender_journey.CommonProxy;
 import mc.duzo.ender_journey.EndersJourney;
 import mc.duzo.ender_journey.common.DimensionUtil;
 import mc.duzo.ender_journey.common.block_entity.ColumnBlockEntity;
@@ -45,6 +46,8 @@ import net.minecraft.world.level.block.Rotation;
 import net.minecraft.world.level.block.entity.BlockEntity;
 import net.minecraft.world.level.block.entity.RandomizableContainerBlockEntity;
 import net.minecraft.world.level.block.state.BlockState;
+import net.minecraft.world.level.block.state.properties.BlockStateProperties;
+import net.minecraft.world.level.block.state.properties.Property;
 import net.minecraft.world.level.levelgen.structure.BoundingBox;
 import net.minecraft.world.level.levelgen.structure.templatesystem.StructurePlaceSettings;
 import net.minecraft.world.level.levelgen.structure.templatesystem.StructureTemplate;
@@ -204,6 +207,15 @@ public class RealmManager implements Savable {
 
 			placeColumn(level);
 
+			if(!CommonProxy.BLOCKS.isEmpty()){
+				for (CommonProxy.PlacedBlock placedBlock : CommonProxy.BLOCKS){
+					BlockState state = placedBlock.block().defaultBlockState();
+					if(placedBlock.facing()!=null){
+						state.setValue(BlockStateProperties.FACING,placedBlock.facing());
+					}
+					level.setBlock(placedBlock.pos(),state,3);
+				}
+			}
 			if(ModList.get().isLoaded("bte_mobs")){
 				this.spawnBlackSmith(level);
 				this.spawnDruid(level);
