@@ -14,6 +14,9 @@ public class CommonProxy {
     public static final List<PlacedBlock> BLOCKS = new ArrayList<>();
 
     public void init(){
+
+    }
+    public static void initBlocks(){
         add("paraglider:rito_goddess_statue", -10,130,34, Direction.EAST);
         add("paraglider:rito_goddess_statue", 11,130,34, Direction.WEST);
         add("paraglider:rito_goddess_statue", 34,130,10, Direction.NORTH);

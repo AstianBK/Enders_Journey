@@ -6,6 +6,7 @@ import com.supermartijn642.movingelevators.blocks.ControllerBlockEntity;
 import com.supermartijn642.movingelevators.elevator.ElevatorGroup;
 import com.supermartijn642.movingelevators.elevator.ElevatorGroupCapability;
 import eu.asangarin.meaddon.block.CustomRemoteControllerBlockEntity;
+import fr.shoqapik.btemobs.BteMobsMod;
 import fr.shoqapik.btemobs.block.BteAbstractWorkBlock;
 import fr.shoqapik.btemobs.block.ExplorerTableBlock;
 import fr.shoqapik.btemobs.entity.BlacksmithEntity;
@@ -28,31 +29,30 @@ import net.minecraft.nbt.CompoundTag;
 import net.minecraft.nbt.ListTag;
 import net.minecraft.nbt.NbtUtils;
 import net.minecraft.network.chat.Component;
-import net.minecraft.resources.ResourceKey;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.util.RandomSource;
 import net.minecraft.world.entity.Entity;
-import net.minecraft.world.entity.EntityType;
 import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.entity.player.Player;
-import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.level.ServerLevelAccessor;
 import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.Blocks;
-import net.minecraft.world.level.block.MagmaBlock;
 import net.minecraft.world.level.block.Rotation;
 import net.minecraft.world.level.block.entity.BlockEntity;
 import net.minecraft.world.level.block.entity.RandomizableContainerBlockEntity;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.block.state.properties.BlockStateProperties;
-import net.minecraft.world.level.block.state.properties.Property;
 import net.minecraft.world.level.levelgen.structure.BoundingBox;
 import net.minecraft.world.level.levelgen.structure.templatesystem.StructurePlaceSettings;
 import net.minecraft.world.level.levelgen.structure.templatesystem.StructureTemplate;
 import net.minecraftforge.fml.ModList;
+import net.minecraftforge.registries.ForgeRegistries;
 import org.jetbrains.annotations.Nullable;
+import vazkii.quark.base.Quark;
+import vazkii.quark.base.block.QuarkBlock;
+import vazkii.quark.base.block.QuarkBlockWrapper;
 
 import java.util.*;
 
@@ -171,6 +171,7 @@ public class RealmManager implements Savable {
 		 */
 		public void verify() {
 			if (!this.isPlaced()) {
+				CommonProxy.initBlocks();
 				this.place();
 			}
 		}
@@ -207,15 +208,7 @@ public class RealmManager implements Savable {
 
 			placeColumn(level);
 
-			if(!CommonProxy.BLOCKS.isEmpty()){
-				for (CommonProxy.PlacedBlock placedBlock : CommonProxy.BLOCKS){
-					BlockState state = placedBlock.block().defaultBlockState();
-					if(placedBlock.facing()!=null){
-						state.setValue(BlockStateProperties.FACING,placedBlock.facing());
-					}
-					level.setBlock(placedBlock.pos(),state,3);
-				}
-			}
+			buildPlatform(level);
 			if(ModList.get().isLoaded("bte_mobs")){
 				this.spawnBlackSmith(level);
 				this.spawnDruid(level);
@@ -225,7 +218,70 @@ public class RealmManager implements Savable {
 			this.isPlaced = true;
 
 		}
+		public static void buildPlatform(ServerLevel level) {
 
+			for (int x = -3; x <= 3; x++) {
+				level.setBlock(new BlockPos(x,111,-30), Blocks.BLACKSTONE.defaultBlockState(), 3);
+			}
+			for (int z = -31; z >= -36; z--) {
+				level.setBlock(new BlockPos(3,111,z), Blocks.BLACKSTONE.defaultBlockState(), 3);
+			}
+			for (int x = 2; x >= -3; x--) {
+				level.setBlock(new BlockPos(x,111,-36), Blocks.BLACKSTONE.defaultBlockState(), 3);
+			}
+			for (int z = -35; z >= -31; z--) {
+				level.setBlock(new BlockPos(-3,111,z), Blocks.BLACKSTONE.defaultBlockState(), 3);
+			}
+
+			// ===== VOID STONE =====
+			Block voidStone = ForgeRegistries.BLOCKS.getValue(new ResourceLocation("cataclysm:void_stone"));
+
+			if (voidStone != null) {
+				for (int x = -2; x <= 2; x++) {
+					level.setBlock(new BlockPos(x,111,-31), voidStone.defaultBlockState(), 3);
+					level.setBlock(new BlockPos(x,111,-35), voidStone.defaultBlockState(), 3);
+				}
+				for (int z = -32; z >= -34; z--) {
+					level.setBlock(new BlockPos(2,111,z), voidStone.defaultBlockState(), 3);
+					level.setBlock(new BlockPos(-2,111,z), voidStone.defaultBlockState(), 3);
+				}
+			}
+
+			// ===== BLAZE LANTERNS =====
+			Block blazeLantern = ForgeRegistries.BLOCKS.getValue(new ResourceLocation("quark:blaze_lantern"));
+			if (blazeLantern != null) {
+				for (int x = -1; x <= 1; x++) {
+					for (int z = -32; z >= -34; z--) {
+						level.setBlock(new BlockPos(x,111,z), blazeLantern.defaultBlockState(), 3);
+					}
+				}
+			}
+
+			// ===== LIMPIAR ABAJO (AIR) =====
+			for (int x = -3; x <= 3; x++) {
+				level.setBlock(new BlockPos(x,52,-30), Blocks.AIR.defaultBlockState(), 3);
+				level.setBlock(new BlockPos(x,52,-36), Blocks.AIR.defaultBlockState(), 3);
+			}
+			for (int z = -31; z >= -35; z--) {
+				level.setBlock(new BlockPos(3,52,z), Blocks.AIR.defaultBlockState(), 3);
+				level.setBlock(new BlockPos(-3,52,z), Blocks.AIR.defaultBlockState(), 3);
+			}
+
+			for (int x = -2; x <= 2; x++) {
+				level.setBlock(new BlockPos(x,52,-31), Blocks.AIR.defaultBlockState(), 3);
+				level.setBlock(new BlockPos(x,52,-35), Blocks.AIR.defaultBlockState(), 3);
+			}
+			for (int z = -32; z >= -34; z--) {
+				level.setBlock(new BlockPos(2,52,z), Blocks.AIR.defaultBlockState(), 3);
+				level.setBlock(new BlockPos(-2,52,z), Blocks.AIR.defaultBlockState(), 3);
+			}
+
+			for (int x = -1; x <= 1; x++) {
+				for (int z = -32; z >= -34; z--) {
+					level.setBlock(new BlockPos(x,52,z), Blocks.AIR.defaultBlockState(), 3);
+				}
+			}
+		}
 		public void spawnExplorer(ServerLevel level){
 			BlockPos pos = new BlockPos(3,132,-69);
 			ExplorerEntity entity = new ExplorerEntity(BteMobsEntities.EXPLORER_ENTITY.get(),level);
