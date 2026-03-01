@@ -55,6 +55,7 @@ import net.minecraftforge.event.TickEvent;
 import net.minecraftforge.fml.ModList;
 import net.minecraftforge.registries.ForgeRegistries;
 import org.jetbrains.annotations.Nullable;
+import twilightforest.block.FireflyBlock;
 import vazkii.quark.base.Quark;
 import vazkii.quark.base.block.QuarkBlock;
 import vazkii.quark.base.block.QuarkBlockWrapper;
@@ -237,8 +238,12 @@ public class RealmManager implements Savable {
 			if(!CommonProxy.BLOCKS.isEmpty()){
 				for (CommonProxy.PlacedBlock placed : CommonProxy.BLOCKS){
 					BlockState state = placed.block().defaultBlockState();
-					if(state.hasProperty(BlockStateProperties.FACING)){
-						state.setValue(BlockStateProperties.FACING,placed.facing());
+					if(state.isAir()){
+						continue;
+					}
+
+					if(placed.facing()!=null){
+						state = state.setValue(BlockStateProperties.FACING,placed.facing());
 					}
 					getDimension().setBlock(placed.pos(),state,3);
 				}
