@@ -40,6 +40,7 @@ import net.minecraft.world.level.ChunkPos;
 import net.minecraft.world.level.ServerLevelAccessor;
 import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.Blocks;
+import net.minecraft.world.level.block.HorizontalDirectionalBlock;
 import net.minecraft.world.level.block.Rotation;
 import net.minecraft.world.level.block.entity.BlockEntity;
 import net.minecraft.world.level.block.entity.RandomizableContainerBlockEntity;
@@ -55,6 +56,8 @@ import net.minecraftforge.event.TickEvent;
 import net.minecraftforge.fml.ModList;
 import net.minecraftforge.registries.ForgeRegistries;
 import org.jetbrains.annotations.Nullable;
+import tictim.paraglider.ParagliderMod;
+import tictim.paraglider.contents.Contents;
 import twilightforest.block.FireflyBlock;
 import vazkii.quark.base.Quark;
 import vazkii.quark.base.block.QuarkBlock;
@@ -243,7 +246,13 @@ public class RealmManager implements Savable {
 					}
 
 					if(placed.facing()!=null){
-						state = state.setValue(BlockStateProperties.FACING,placed.facing());
+
+						if(state.is(Contents.RITO_GODDESS_STATUE.get())){
+							state = state.setValue(HorizontalDirectionalBlock.FACING,placed.facing());
+						}else{
+							state = state.setValue(BlockStateProperties.FACING,placed.facing());
+						}
+
 					}
 					getDimension().setBlock(placed.pos(),state,3);
 				}
