@@ -18,6 +18,15 @@ public class CommonProxy {
 
     }
     public static void initBlocks(){
+
+        // ===== EXTRA BLOCKS =====
+        add("minecraft:air", 35,131,-10);
+        add("minecraft:air", 35,132,-10);
+        add("minecraft:air", 10,129,35);
+        add("minecraft:cyan_terracotta", 34,129,10);
+        add("minecraft:cyan_terracotta", 33,129,-10);
+        add("minecraft:cyan_terracotta", 33,128,-10);
+
         add("paraglider:rito_goddess_statue", -10,130,34, Direction.EAST);
         add("paraglider:rito_goddess_statue", 11,130,34, Direction.WEST);
         add("paraglider:rito_goddess_statue", 34,130,10, Direction.NORTH);
