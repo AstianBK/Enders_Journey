@@ -64,7 +64,6 @@ public class EndersJourney {
         if(ServerData.get().getRealmManager()==null)return;
 
         ServerData.get().getRealmManager().getPlayer().onJoin(event.getEntity());
-
     }
 
     @SubscribeEvent

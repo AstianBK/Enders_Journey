@@ -36,6 +36,7 @@ import net.minecraft.util.RandomSource;
 import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.entity.player.Player;
+import net.minecraft.world.level.ChunkPos;
 import net.minecraft.world.level.ServerLevelAccessor;
 import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.Blocks;
@@ -44,9 +45,13 @@ import net.minecraft.world.level.block.entity.BlockEntity;
 import net.minecraft.world.level.block.entity.RandomizableContainerBlockEntity;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.block.state.properties.BlockStateProperties;
+import net.minecraft.world.level.chunk.ChunkAccess;
+import net.minecraft.world.level.chunk.ChunkStatus;
 import net.minecraft.world.level.levelgen.structure.BoundingBox;
 import net.minecraft.world.level.levelgen.structure.templatesystem.StructurePlaceSettings;
 import net.minecraft.world.level.levelgen.structure.templatesystem.StructureTemplate;
+import net.minecraftforge.common.MinecraftForge;
+import net.minecraftforge.event.TickEvent;
 import net.minecraftforge.fml.ModList;
 import net.minecraftforge.registries.ForgeRegistries;
 import org.jetbrains.annotations.Nullable;
@@ -55,6 +60,7 @@ import vazkii.quark.base.block.QuarkBlock;
 import vazkii.quark.base.block.QuarkBlockWrapper;
 
 import java.util.*;
+import java.util.concurrent.ExecutionException;
 
 import static net.minecraft.world.level.levelgen.structure.templatesystem.StructureTemplate.processBlockInfos;
 
@@ -116,12 +122,14 @@ public class RealmManager implements Savable {
 	public static class Structure implements Savable {
 		private final ResourceLocation structure;
 		private boolean isPlaced;
+		private boolean plataformPlaced;
 		private BlockPos centre;
 		private final int[] posElevator=new int[]{1,-1};
-		private final List<BlockPos> posElevators=List.of(new BlockPos(0,112,-38),new BlockPos(0,80,-38),new BlockPos(0,53,-38));
+		private final List<BlockPos> posElevators=List.of(new BlockPos(0,53,-38),new BlockPos(0,80,-38),new BlockPos(0,112,-38));
 		public Structure(ResourceLocation structure, @Nullable BlockPos centre) {
 			this.structure = structure;
 			this.isPlaced = false;
+			this.plataformPlaced = false;
 			this.centre = centre;
 		}
 		public Structure() {
@@ -139,6 +147,7 @@ public class RealmManager implements Savable {
 
 			data.putString("Structure", this.structure.toString());
 
+			data.putBoolean("plataformPlaced",this.plataformPlaced);
 			data.putBoolean("isPlaced", this.isPlaced);
 			if (this.centre != null)
 				data.put("Centre", NbtUtils.writeBlockPos(this.centre));
@@ -149,7 +158,7 @@ public class RealmManager implements Savable {
 		@Override
 		public void deserialise(CompoundTag data) {
 			this.isPlaced = data.getBoolean("isPlaced");
-
+			this.plataformPlaced = data.getBoolean("plataformPlaced");
 			if (data.contains("Centre")) {
 				this.centre = NbtUtils.readBlockPos(data.getCompound("Centre"));
 			}
@@ -208,78 +217,33 @@ public class RealmManager implements Savable {
 
 			placeColumn(level);
 
-			buildPlatform(level);
+			checkAndGeneratePlatform(getDimension());
+
+
 			if(ModList.get().isLoaded("bte_mobs")){
 				this.spawnBlackSmith(level);
 				this.spawnDruid(level);
 				this.spawnWarlock(level);
 				this.spawnExplorer(level);
 			}
+
 			this.isPlaced = true;
 
 		}
-		public static void buildPlatform(ServerLevel level) {
 
-			for (int x = -3; x <= 3; x++) {
-				level.setBlock(new BlockPos(x,111,-30), Blocks.BLACKSTONE.defaultBlockState(), 3);
-			}
-			for (int z = -31; z >= -36; z--) {
-				level.setBlock(new BlockPos(3,111,z), Blocks.BLACKSTONE.defaultBlockState(), 3);
-			}
-			for (int x = 2; x >= -3; x--) {
-				level.setBlock(new BlockPos(x,111,-36), Blocks.BLACKSTONE.defaultBlockState(), 3);
-			}
-			for (int z = -35; z >= -31; z--) {
-				level.setBlock(new BlockPos(-3,111,z), Blocks.BLACKSTONE.defaultBlockState(), 3);
-			}
+		public void checkAndGeneratePlatform(ServerLevel level) {
+			if (plataformPlaced) return;
 
-			// ===== VOID STONE =====
-			Block voidStone = ForgeRegistries.BLOCKS.getValue(new ResourceLocation("cataclysm:void_stone"));
-
-			if (voidStone != null) {
-				for (int x = -2; x <= 2; x++) {
-					level.setBlock(new BlockPos(x,111,-31), voidStone.defaultBlockState(), 3);
-					level.setBlock(new BlockPos(x,111,-35), voidStone.defaultBlockState(), 3);
-				}
-				for (int z = -32; z >= -34; z--) {
-					level.setBlock(new BlockPos(2,111,z), voidStone.defaultBlockState(), 3);
-					level.setBlock(new BlockPos(-2,111,z), voidStone.defaultBlockState(), 3);
-				}
-			}
-
-			// ===== BLAZE LANTERNS =====
-			Block blazeLantern = ForgeRegistries.BLOCKS.getValue(new ResourceLocation("quark:blaze_lantern"));
-			if (blazeLantern != null) {
-				for (int x = -1; x <= 1; x++) {
-					for (int z = -32; z >= -34; z--) {
-						level.setBlock(new BlockPos(x,111,z), blazeLantern.defaultBlockState(), 3);
+			if(!CommonProxy.BLOCKS.isEmpty()){
+				for (CommonProxy.PlacedBlock placed : CommonProxy.BLOCKS){
+					BlockState state = placed.block().defaultBlockState();
+					if(state.hasProperty(BlockStateProperties.FACING)){
+						state.setValue(BlockStateProperties.FACING,placed.facing());
 					}
+					getDimension().setBlock(placed.pos(),state,3);
 				}
-			}
+				plataformPlaced = true;
 
-			// ===== LIMPIAR ABAJO (AIR) =====
-			for (int x = -3; x <= 3; x++) {
-				level.setBlock(new BlockPos(x,52,-30), Blocks.AIR.defaultBlockState(), 3);
-				level.setBlock(new BlockPos(x,52,-36), Blocks.AIR.defaultBlockState(), 3);
-			}
-			for (int z = -31; z >= -35; z--) {
-				level.setBlock(new BlockPos(3,52,z), Blocks.AIR.defaultBlockState(), 3);
-				level.setBlock(new BlockPos(-3,52,z), Blocks.AIR.defaultBlockState(), 3);
-			}
-
-			for (int x = -2; x <= 2; x++) {
-				level.setBlock(new BlockPos(x,52,-31), Blocks.AIR.defaultBlockState(), 3);
-				level.setBlock(new BlockPos(x,52,-35), Blocks.AIR.defaultBlockState(), 3);
-			}
-			for (int z = -32; z >= -34; z--) {
-				level.setBlock(new BlockPos(2,52,z), Blocks.AIR.defaultBlockState(), 3);
-				level.setBlock(new BlockPos(-2,52,z), Blocks.AIR.defaultBlockState(), 3);
-			}
-
-			for (int x = -1; x <= 1; x++) {
-				for (int z = -32; z >= -34; z--) {
-					level.setBlock(new BlockPos(x,52,z), Blocks.AIR.defaultBlockState(), 3);
-				}
 			}
 		}
 		public void spawnExplorer(ServerLevel level){
@@ -359,6 +323,7 @@ public class RealmManager implements Savable {
 		}
 
 		public void settingElevator(ServerLevel level){
+			EndersJourney.LOGGER.info("Setting");
 			ElevatorGroupCapability cap=ElevatorGroupCapability.get(level);
 			boolean isFirstConfig=true;
 			for (BlockPos pos:this.posElevators){
@@ -399,7 +364,11 @@ public class RealmManager implements Savable {
 				}
 			}
 		}
-
+		public void makePlataforma(ServerLevel level, long start){
+			EndersJourney.LOGGER.info("makePlataforma");
+			StructurePlaceSettings settings=new StructurePlaceSettings();
+			this.placeComponent(start,level,0,111,-33,new ResourceLocation(EndersJourney.MODID, "plataforma"), settings);
+		}
 		public void makeSuperiorIsland(ServerLevel level, long start){
 			StructurePlaceSettings settings=new StructurePlaceSettings();
 			this.placeComponent(start,level,5,111,-4,new ResourceLocation(EndersJourney.MODID, "temple"), settings);
@@ -532,7 +501,6 @@ public class RealmManager implements Savable {
 		public void onJoin(Player player) {
 			if (player instanceof ServerPlayer serverPlayer) {
 				this.runSpawnLogic(serverPlayer);
-
 			}
 		}
 		public void onLeave(Player player) {
@@ -543,6 +511,7 @@ public class RealmManager implements Savable {
 				this.runSpawnLogic((ServerPlayer) player);
 			}
 		}
+
 
 		private void runSpawnLogic(ServerPlayer player) {
 			if (this.hasSeen(player)) {
@@ -582,7 +551,6 @@ public class RealmManager implements Savable {
 			CompoundTag seenData = new CompoundTag();
 			this.seen.forEach((uuid, realmPlayer) -> seenData.put(uuid.toString(), realmPlayer.serialise()));
 			data.put("Seen", seenData);
-			EndersJourney.LOGGER.debug("Serialise Seen list :"+seenData);
 
 			return data;
 		}
@@ -591,7 +559,7 @@ public class RealmManager implements Savable {
 		public void deserialise(CompoundTag data) {
 			this.seen = new HashMap<>();
 			CompoundTag seenData = data.getCompound("Seen");
-			EndersJourney.LOGGER.debug("deserialise Seen list :"+seenData);
+
 			seenData.getAllKeys().forEach(key -> this.seen.put(UUID.fromString(key), new RealmPlayer(UUID.fromString(key),seenData.getCompound(key))));
 		}
 	}

@@ -53,62 +53,6 @@ public class CommonProxy {
         add("twilightforest:firefly_particle_spawner", -22,125,7);
         add("twilightforest:firefly_particle_spawner", -22,127,-7);
         add("twilightforest:firefly_particle_spawner", -22,127,-12);
-
-        // ===== BLACKSTONE MARCO =====
-        for (int x = -3; x <= 3; x++) add(Blocks.BLACKSTONE, x,111,-30);
-        for (int z = -31; z >= -36; z--) add(Blocks.BLACKSTONE, 3,111,z);
-        for (int x = 2; x >= -3; x--) add(Blocks.BLACKSTONE, x,111,-36);
-        for (int z = -35; z >= -31; z--) add(Blocks.BLACKSTONE, -3,111,z);
-
-        // ===== VOID STONE =====
-        add("cataclysm:void_stone", -2,111,-31);
-        add("cataclysm:void_stone", -1,111,-31);
-        add("cataclysm:void_stone", 0,111,-31);
-        add("cataclysm:void_stone", 1,111,-31);
-        add("cataclysm:void_stone", 2,111,-31);
-        add("cataclysm:void_stone", 2,111,-32);
-        add("cataclysm:void_stone", 2,111,-33);
-        add("cataclysm:void_stone", 2,111,-34);
-        add("cataclysm:void_stone", 2,111,-35);
-        add("cataclysm:void_stone", 1,111,-35);
-        add("cataclysm:void_stone", 0,111,-35);
-        add("cataclysm:void_stone", -1,111,-35);
-        add("cataclysm:void_stone", -2,111,-35);
-        add("cataclysm:void_stone", -2,111,-34);
-        add("cataclysm:void_stone", -2,111,-33);
-        add("cataclysm:void_stone", -2,111,-32);
-
-        // ===== BLAZE LANTERNS =====
-        add("quark:blaze_lantern", -1,111,-32);
-        add("quark:blaze_lantern", 0,111,-32);
-        add("quark:blaze_lantern", 1,111,-32);
-        add("quark:blaze_lantern", 1,111,-33);
-        add("quark:blaze_lantern", 1,111,-34);
-        add("quark:blaze_lantern", 0,111,-34);
-        add("quark:blaze_lantern", -1,111,-34);
-        add("quark:blaze_lantern", -1,111,-33);
-        add("quark:blaze_lantern", 0,111,-33);
-
-        // ===== LIMPIAR ABAJO (AIR) =====
-        for (int x = -3; x <= 3; x++) add(Blocks.AIR, x,52,-30);
-        for (int z = -31; z >= -36; z--) add(Blocks.AIR, 3,52,z);
-        for (int x = 2; x >= -3; x--) add(Blocks.AIR, x,52,-36);
-        for (int z = -35; z >= -31; z--) add(Blocks.AIR, -3,52,z);
-
-        for (int x = -2; x <= 2; x++) add(Blocks.AIR, x,52,-31);
-        for (int z = -32; z >= -35; z--) add(Blocks.AIR, 2,52,z);
-        for (int x = 1; x >= -2; x--) add(Blocks.AIR, x,52,-35);
-        for (int z = -34; z >= -32; z--) add(Blocks.AIR, -2,52,z);
-
-        add(Blocks.AIR, -1,52,-32);
-        add(Blocks.AIR, 0,52,-32);
-        add(Blocks.AIR, 1,52,-32);
-        add(Blocks.AIR, 1,52,-33);
-        add(Blocks.AIR, 1,52,-34);
-        add(Blocks.AIR, 0,52,-34);
-        add(Blocks.AIR, -1,52,-34);
-        add(Blocks.AIR, -1,52,-33);
-        add(Blocks.AIR, 0,52,-33);
     }
 
     private static void add(String id, int x, int y, int z) {
