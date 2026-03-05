@@ -1,10 +1,10 @@
 {
   "variants": {
     "axis=x": {
-      "model": "minecraft:block/nether_portal_ns"
+      "model": "ender_journey:block/portal_blue_ns"
     },
     "axis=z": {
-      "model": "minecraft:block/nether_portal_ew"
+      "model": "ender_journey:block/portal_blue_ew"
     }
   }
 }

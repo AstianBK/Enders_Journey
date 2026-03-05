@@ -1,10 +1,12 @@
 package mc.duzo.ender_journey;
 
  import com.klikli_dev.occultism.registry.OccultismBlocks;
-import mc.duzo.ender_journey.capabilities.BkCapabilities;
+ import fr.shoqapik.btemobs.BteMobsMod;
+ import mc.duzo.ender_journey.capabilities.BkCapabilities;
 import mc.duzo.ender_journey.capabilities.PortalPlayer;
 import mc.duzo.ender_journey.capabilities.PortalPlayerCapability;
 import mc.duzo.ender_journey.common.DimensionUtil;
+ import mc.duzo.ender_journey.common.blocks.PortalBlock;
  import mc.duzo.ender_journey.common.blocks.PortalNetherBlock;
  import mc.duzo.ender_journey.common.blocks.TheNewEndPortalBlock;
  import mc.duzo.ender_journey.common.register.BKBlocks;
@@ -96,17 +98,16 @@ public class Events {
                     ServerLevel level=EndersJourney.getServer().getLevel(EnderDimensions.REALM_KEY);
                     if(level!=null){
                         if (eyes==8){
-                            EndersJourney.LOGGER.debug("navidad :"+eyes);
                             for (BlockPos pos : BlockPos.betweenClosed(-31,84,-4,-31,94,3)){
                                 if(level.isEmptyBlock(pos) || level.getBlockState(pos).is(BKBlocks.PORTAL_NETHER.get())){
-                                    EndersJourney.LOGGER.debug("xd :"+pos);
                                     level.setBlock(pos, BKBlocks.PORTAL_NETHER.get().defaultBlockState().setValue(PortalNetherBlock.AXIS, Direction.Axis.Z).setValue(PortalNetherBlock.ENABLED,true),3);
                                 }
                             }
-                        }else if(eyes==16){
-                            for (BlockPos pos : BlockPos.betweenClosed(-4,85,28,4,94,28)){
+                        }else if(eyes==10){
+                            for (BlockPos pos : BlockPos.betweenClosed(-4,85,27,4,94,27)){
                                 if(level.isEmptyBlock(pos) || level.getBlockState(pos).is(BKBlocks.PORTAL.get())){
-                                    level.setBlock(pos, BKBlocks.PORTAL.get().defaultBlockState().setValue(TheNewEndPortalBlock.ENABLED,true),3);
+                                    BteMobsMod.LOGGER.info("Portal 10");
+                                    level.setBlock(pos, BKBlocks.PORTAL.get().defaultBlockState().setValue(PortalBlock.ENABLED,true),3);
                                 }
                             }
                         }else if(eyes==24){
@@ -116,11 +117,7 @@ public class Events {
                                 }
                             }
                         }
-                        PacketHandler.sendToPlayer(new PacketUpdateChuck(), (ServerPlayer) event.getEntity());
-
-
                     }
-
                 }
             });
         }
