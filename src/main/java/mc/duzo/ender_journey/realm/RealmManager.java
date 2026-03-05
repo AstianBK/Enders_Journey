@@ -9,16 +9,14 @@ import eu.asangarin.meaddon.block.CustomRemoteControllerBlockEntity;
 import fr.shoqapik.btemobs.BteMobsMod;
 import fr.shoqapik.btemobs.block.BteAbstractWorkBlock;
 import fr.shoqapik.btemobs.block.ExplorerTableBlock;
-import fr.shoqapik.btemobs.entity.BlacksmithEntity;
-import fr.shoqapik.btemobs.entity.DruidEntity;
-import fr.shoqapik.btemobs.entity.ExplorerEntity;
-import fr.shoqapik.btemobs.entity.WarlockEntity;
+import fr.shoqapik.btemobs.entity.*;
 import fr.shoqapik.btemobs.registry.BteMobsBlocks;
 import fr.shoqapik.btemobs.registry.BteMobsEntities;
 import mc.duzo.ender_journey.CommonProxy;
 import mc.duzo.ender_journey.EndersJourney;
 import mc.duzo.ender_journey.common.DimensionUtil;
 import mc.duzo.ender_journey.common.block_entity.ColumnBlockEntity;
+import mc.duzo.ender_journey.common.blocks.TheNewEndPortalBlock;
 import mc.duzo.ender_journey.common.register.BKBlocks;
 import mc.duzo.ender_journey.data.Savable;
 import mc.duzo.ender_journey.world.dimension.EnderDimensions;
@@ -225,12 +223,12 @@ public class RealmManager implements Savable {
 
 
 			if(ModList.get().isLoaded("bte_mobs")){
+				this.spawnNpc5(level);
 				this.spawnBlackSmith(level);
 				this.spawnDruid(level);
 				this.spawnWarlock(level);
 				this.spawnExplorer(level);
 			}
-
 			this.isPlaced = true;
 
 		}
@@ -241,12 +239,8 @@ public class RealmManager implements Savable {
 			if(!CommonProxy.BLOCKS.isEmpty()){
 				for (CommonProxy.PlacedBlock placed : CommonProxy.BLOCKS){
 					BlockState state = placed.block().defaultBlockState();
-					if(state.isAir()){
-						continue;
-					}
 
-					if(placed.facing()!=null){
-
+					if(placed.facing()!=null && (state.hasProperty(HorizontalDirectionalBlock.FACING) || state.hasProperty(BlockStateProperties.FACING))){
 						if(state.is(Contents.RITO_GODDESS_STATUE.get())){
 							state = state.setValue(HorizontalDirectionalBlock.FACING,placed.facing());
 						}else{
@@ -282,7 +276,12 @@ public class RealmManager implements Savable {
 			level.setBlock(pos,magmaBlock,3);
 			entity.tablePos = pos;
 		}
-
+		public void spawnNpc5(ServerLevel level){
+			Npc5Entity entity = new Npc5Entity(BteMobsEntities.NPC5_ENTITY.get(),level);
+			entity.setPos(0.5F, 80,0.5F);
+			entity.setYRot(Direction.NORTH.toYRot());
+			level.addFreshEntity(entity);
+		}
 		public void spawnWarlock(ServerLevel level){
 			WarlockEntity entity = new WarlockEntity(BteMobsEntities.WARLOCK_ENTITY.get(),level);
 			entity.setPos(-62.5F,134,0.5F);

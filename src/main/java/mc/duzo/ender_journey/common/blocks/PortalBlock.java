@@ -24,6 +24,7 @@ import net.minecraft.world.level.Level;
 import net.minecraft.world.level.LevelAccessor;
 import net.minecraft.world.level.block.*;
 import net.minecraft.world.level.block.state.BlockState;
+import net.minecraft.world.level.block.state.StateDefinition;
 import net.minecraft.world.level.block.state.properties.BlockStateProperties;
 import net.minecraft.world.level.block.state.properties.BooleanProperty;
 import net.minecraft.world.phys.shapes.CollisionContext;
@@ -37,6 +38,8 @@ public class PortalBlock extends NetherPortalBlock {
 
     public PortalBlock(Properties properties) {
         super(properties);
+        this.registerDefaultState(this.stateDefinition.any().setValue(AXIS, Direction.Axis.X).setValue(ENABLED,false));
+
     }
 
     @SuppressWarnings("deprecation")
@@ -55,7 +58,7 @@ public class PortalBlock extends NetherPortalBlock {
                     this.handleTeleportation(entity);
                 } else {
                     portalPlayer.ifPresent(handler -> {
-                        if(handler.getEyesEarn()>=16){
+                        if(handler.getEyesEarn()>=10){
                             handler.setInPortal(true);
                             this.handleTeleportation(entity);
                             handler.setPortalTimer(0);
@@ -103,16 +106,13 @@ public class PortalBlock extends NetherPortalBlock {
 
     @Override
     public RenderShape getRenderShape(BlockState p_60550_) {
-        /*Minecraft mc=Minecraft.getInstance();
-        if(mc.player!=null){
-            int eyeEarn=PortalPlayer.get(mc.player).orElseGet(null).getEyesEarn();
-            if(eyeEarn<16){
-                return RenderShape.INVISIBLE;
-            }
-        }*/
         return p_60550_.getValue(ENABLED) ? RenderShape.MODEL : RenderShape.INVISIBLE;
     }
-
+    @Override
+    protected void createBlockStateDefinition(StateDefinition.Builder<Block, BlockState> builder) {
+        super.createBlockStateDefinition(builder);
+        builder.add(ENABLED);
+    }
     @Override
     public void animateTick(BlockState state, Level level, BlockPos pos, RandomSource random) {
         boolean isActive=state.getValue(ENABLED);
