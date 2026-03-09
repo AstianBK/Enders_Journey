@@ -1,5 +1,6 @@
 package mc.duzo.ender_journey.common.blocks;
 
+import mc.duzo.ender_journey.EndersJourney;
 import mc.duzo.ender_journey.capabilities.BkCapabilities;
 import mc.duzo.ender_journey.capabilities.PortalPlayer;
 import mc.duzo.ender_journey.mixin.common.EntityAccessor;
@@ -84,25 +85,27 @@ public class PortalBlock extends NetherPortalBlock {
             ServerLevel destinationLevel = server.getLevel(destinationKey);
             if (destinationLevel != null && !entity.isPassenger()) {
                 entity.level.getProfiler().push("portal");
-                createPlataforma(destinationLevel,new BlockPos(100, 48, 0),100, 50, 0);
-                Vec3 tpPos = Vec3.atCenterOf(new BlockPos(100, 50, 0));
-                ((ServerPlayer)entity).teleportTo(destinationLevel, tpPos.x, tpPos.y, tpPos.z, entity.getYRot(), entity.getXRot());
-                entity.level.getProfiler().pop();
+                BlockPos platform = new BlockPos(-8, 52, -13);
+
+                destinationLevel.getChunk(platform);
+
+                //createEndPlatform(destinationLevel, platform);
+
+                Vec3 tp = Vec3.atCenterOf(platform.above());
+
+                ((ServerPlayer)entity).teleportTo(destinationLevel, tp.x, tp.y, tp.z, entity.getYRot(), entity.getXRot());                entity.level.getProfiler().pop();
             }
         }
     }
-    public void createPlataforma(ServerLevel level ,BlockPos blockPos, int i , int j , int k){
-        if(!level.getBlockState(blockPos).isAir() && !level.getBlockState(blockPos.above()).isAir()){
-            BlockPos.betweenClosed(i - 2, j + 1, k - 2, i + 2, j + 3, k + 2).forEach((p_207578_) -> {
-                level.setBlockAndUpdate(p_207578_, Blocks.AIR.defaultBlockState());
-            });
-        }
+    public static void createEndPlatform(ServerLevel level, BlockPos center) {
 
-        if(level.getBlockState(blockPos.below()).isAir() || !level.getBlockState(blockPos.below()).getFluidState().isEmpty()){
-            BlockPos.betweenClosed(i - 2, j, k - 2, i + 2, j, k + 2).forEach((p_184101_) -> {
-                level.setBlockAndUpdate(p_184101_, Blocks.OBSIDIAN.defaultBlockState());
-            });
-        }
+        BlockPos.betweenClosed(center.offset(-2, 1, -2), center.offset(2, 3, 2)).forEach(pos -> {
+            level.setBlockAndUpdate(pos, Blocks.AIR.defaultBlockState());
+        });
+
+        BlockPos.betweenClosed(center.offset(-2, 0, -2), center.offset(2, 0, 2)).forEach(pos -> {
+            level.setBlockAndUpdate(pos, Blocks.OBSIDIAN.defaultBlockState());
+        });
     }
 
 
