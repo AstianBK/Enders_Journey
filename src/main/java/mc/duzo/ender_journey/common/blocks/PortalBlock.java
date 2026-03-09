@@ -85,11 +85,11 @@ public class PortalBlock extends NetherPortalBlock {
             ServerLevel destinationLevel = server.getLevel(destinationKey);
             if (destinationLevel != null && !entity.isPassenger()) {
                 entity.level.getProfiler().push("portal");
-                BlockPos platform = new BlockPos(100, 80, 0);
+                BlockPos platform = new BlockPos(-8, 52, -13);
 
                 destinationLevel.getChunk(platform);
 
-                createEndPlatform(destinationLevel, platform);
+                //createEndPlatform(destinationLevel, platform);
 
                 Vec3 tp = Vec3.atCenterOf(platform.above());
 
