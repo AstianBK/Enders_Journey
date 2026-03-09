@@ -24,7 +24,9 @@ import net.minecraft.world.level.block.Blocks;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.block.state.properties.BlockStateProperties;
 import net.minecraft.world.level.border.WorldBorder;
+import net.minecraft.world.level.chunk.ChunkGenerator;
 import net.minecraft.world.level.levelgen.Heightmap;
+import net.minecraft.world.level.levelgen.RandomState;
 import net.minecraft.world.level.portal.PortalInfo;
 import net.minecraft.world.phys.Vec3;
 import net.minecraftforge.common.util.ITeleporter;
@@ -70,12 +72,15 @@ public class BKPortalForcer implements ITeleporter {
         } else {
             WorldBorder worldBorder = destinationLevel.getWorldBorder();
             BlockPos pos;
-            EndersJourney.LOGGER.debug("Dimesion"+level.dimension());
             if(ServerData.get().getRealmManager().getPlayer().getPlayerForUUID(entity.getUUID()).getTpPosForDimension(level.dimension().toString())!=null){
                 pos = ServerData.get().getRealmManager().getPlayer().getPlayerForUUID(entity.getUUID()).getTpPosForDimension(level.dimension().toString());
             }else {
-                pos = findSafeSurface(level,level.random);
-                ServerData.get().getRealmManager().getPlayer().getPlayerForUUID(entity.getUUID()).setTpPosForDimension(pos,level.dimension().toString());
+                if (!this.level.dimension().equals(Level.END)){
+                    pos = findSafePosNoise(level,level.random);
+                    ServerData.get().getRealmManager().getPlayer().getPlayerForUUID(entity.getUUID()).setTpPosForDimension(pos,level.dimension().toString());
+                }else {
+                    pos = new BlockPos(100, 50, 0);
+                }
             }
             BlockPos finalPos = pos;
             return this.getExitPortal(entity, finalPos, worldBorder).map((rectangle) -> {
@@ -102,7 +107,7 @@ public class BKPortalForcer implements ITeleporter {
                     return new PortalInfo(Vec3.atCenterOf(finalPos.above()),
                             Vec3.ZERO, entity.getYRot(), entity.getXRot());
                 } else {
-                    return new PortalInfo(Vec3.atCenterOf(ServerLevel.END_SPAWN_POINT),
+                    return new PortalInfo(Vec3.atCenterOf(new BlockPos(100, 50, 0)),
                             Vec3.ZERO, entity.getYRot(), entity.getXRot());
                 }
             }).orElse(null);
@@ -129,60 +134,86 @@ public class BKPortalForcer implements ITeleporter {
             return this.createPortal(ServerLevel.END_SPAWN_POINT,direction$axis);
         }
     }
-    public static BlockPos findSafeSurface(ServerLevel level, RandomSource random) {
-        if(level.dimension()==Level.NETHER){
-            return findSafeNetherPos(level,random);
-        }
-        BlockPos.MutableBlockPos pos = new BlockPos.MutableBlockPos();
 
-        int radius = 200;
+    public static BlockPos findSafePosNoise(ServerLevel level, RandomSource random) {
 
-        for (int tries = 0; tries < 1000; tries++) {
-
-            int x = random.nextInt(radius * 2) - radius;
-            int z = random.nextInt(radius * 2) - radius;
-
-            int y = level.getHeight(Heightmap.Types.WORLD_SURFACE, x, z);
-
-
-            pos.set(x, y, z);
-
-            Holder<Biome> holder = level.getBiome(pos);
-            if (tries % 200 == 0) {
-                radius += 200;
-            }
-            if(holder.is(BiomeTags.IS_OCEAN) || holder.is(BiomeTags.IS_RIVER) || holder.is(BiomeTags.IS_DEEP_OCEAN))continue;
-            if (level.getBlockState(pos.above()).isAir() && level.canSeeSky(pos.above())) {
-                return new BlockPos(pos.getX(),pos.getY(),pos.getZ());
-            }
-
+        if (level.dimension().equals(Level.NETHER)){
+            return findSafeNetherCave(level,random);
         }
 
-        return level.getSharedSpawnPos();
-    }
+        ChunkGenerator generator = level.getChunkSource().getGenerator();
+        RandomState randomState = level.getChunkSource().randomState();
 
-    public static BlockPos findSafeNetherPos(ServerLevel level, RandomSource random) {
-        BlockPos.MutableBlockPos pos = new BlockPos.MutableBlockPos();
 
-        for (int tries = 0; tries < 3000; tries++) {
+        for (int tries = 0; tries < 20; tries++) {
 
             int x = random.nextInt(2000) - 1000;
             int z = random.nextInt(2000) - 1000;
 
-            int y = 121;
+            int y = generator.getBaseHeight(x, z, Heightmap.Types.MOTION_BLOCKING_NO_LEAVES, level, randomState);
+
+
+            if (y <= level.getMinBuildHeight() + 3)continue;
+
+
+            BlockPos pos = new BlockPos(x, y, z);
+
+
+            if (isSafeSurface(level, pos)) {
+                return pos;
+            }
+        }
+
+        return level.getSharedSpawnPos();
+    }
+    private static boolean isSafeSurface(ServerLevel level, BlockPos pos) {
+
+        BlockState floor = level.getBlockState(pos.below());
+
+        if (!floor.getMaterial().isSolid())
+            return false;
+
+        if (!level.getBlockState(pos).isAir())
+            return false;
+
+        if (!level.getBlockState(pos.above()).isAir())
+            return false;
+
+        if (!level.getFluidState(pos.below()).isEmpty())
+            return false;
+
+        return true;
+    }
+    public static BlockPos findSafeNetherCave(ServerLevel level, RandomSource random) {
+
+        ChunkGenerator generator = level.getChunkSource().getGenerator();
+        RandomState randomState = level.getChunkSource().randomState();
+
+        BlockPos.MutableBlockPos pos = new BlockPos.MutableBlockPos();
+
+        for (int tries = 0; tries < 30; tries++) {
+
+            int chunkX = random.nextInt(64) - 32;
+            int chunkZ = random.nextInt(64) - 32;
+
+            int x = (chunkX << 4) + random.nextInt(16);
+            int z = (chunkZ << 4) + random.nextInt(16);
+
+            int y = generator.getBaseHeight(x, z, Heightmap.Types.MOTION_BLOCKING_NO_LEAVES, level, randomState);
+            if (y > 120) y = 120;
+
             pos.set(x, y, z);
 
-            for (int dy = y; dy > level.getMinBuildHeight() + 5; dy--) {
+            for (int dy = y; dy > 30; dy--) {
 
                 pos.setY(dy);
 
-                boolean solidFloor = level.getBlockState(pos).getMaterial().isSolid();
-                boolean air1 = level.getBlockState(pos.above()).isAir();
-                boolean air2 = level.getBlockState(pos.above(2)).isAir();
-                boolean air3 = level.getBlockState(pos.above(3)).isAir();
+                BlockState floor = level.getBlockState(pos.below());
+                BlockState body = level.getBlockState(pos);
+                BlockState head = level.getBlockState(pos.above());
 
-                if (solidFloor && air1 && air2 && air3) {
-                    return pos.above().immutable();
+                if (floor.getMaterial().isSolid() && body.isAir() && head.isAir() && level.getFluidState(pos).isEmpty()) {
+                    return pos.immutable();
                 }
             }
         }

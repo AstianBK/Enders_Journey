@@ -13,10 +13,12 @@ import net.minecraft.resources.ResourceKey;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.level.ServerLevel;
+import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.sounds.SoundEvents;
 import net.minecraft.sounds.SoundSource;
 import net.minecraft.util.RandomSource;
 import net.minecraft.world.entity.Entity;
+import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.context.BlockPlaceContext;
 import net.minecraft.world.level.BlockGetter;
@@ -27,6 +29,7 @@ import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.block.state.StateDefinition;
 import net.minecraft.world.level.block.state.properties.BlockStateProperties;
 import net.minecraft.world.level.block.state.properties.BooleanProperty;
+import net.minecraft.world.phys.Vec3;
 import net.minecraft.world.phys.shapes.CollisionContext;
 import net.minecraft.world.phys.shapes.VoxelShape;
 import net.minecraftforge.common.util.LazyOptional;
@@ -46,7 +49,7 @@ public class PortalBlock extends NetherPortalBlock {
     @Override
     public void entityInside(BlockState state, Level level, BlockPos pos, Entity entity) {
         EntityAccessor entityAccessor = (EntityAccessor) entity;
-        if (!entity.isPassenger() && !entity.isVehicle() && entity.canChangeDimensions()) {
+        if (entity instanceof Player &&!entity.isPassenger() && !entity.isVehicle() && entity.canChangeDimensions()) {
             if (entity.isOnPortalCooldown()) {
                 entity.setPortalCooldown();
             } else {
@@ -81,10 +84,24 @@ public class PortalBlock extends NetherPortalBlock {
             ServerLevel destinationLevel = server.getLevel(destinationKey);
             if (destinationLevel != null && !entity.isPassenger()) {
                 entity.level.getProfiler().push("portal");
-                entity.setPortalCooldown();
-                entity.changeDimension(destinationLevel, new BKPortalForcer(destinationLevel, true));
+                createPlataforma(destinationLevel,new BlockPos(100, 48, 0),100, 50, 0);
+                Vec3 tpPos = Vec3.atCenterOf(new BlockPos(100, 50, 0));
+                ((ServerPlayer)entity).teleportTo(destinationLevel, tpPos.x, tpPos.y, tpPos.z, entity.getYRot(), entity.getXRot());
                 entity.level.getProfiler().pop();
             }
+        }
+    }
+    public void createPlataforma(ServerLevel level ,BlockPos blockPos, int i , int j , int k){
+        if(!level.getBlockState(blockPos).isAir() && !level.getBlockState(blockPos.above()).isAir()){
+            BlockPos.betweenClosed(i - 2, j + 1, k - 2, i + 2, j + 3, k + 2).forEach((p_207578_) -> {
+                level.setBlockAndUpdate(p_207578_, Blocks.AIR.defaultBlockState());
+            });
+        }
+
+        if(level.getBlockState(blockPos.below()).isAir() || !level.getBlockState(blockPos.below()).getFluidState().isEmpty()){
+            BlockPos.betweenClosed(i - 2, j, k - 2, i + 2, j, k + 2).forEach((p_184101_) -> {
+                level.setBlockAndUpdate(p_184101_, Blocks.OBSIDIAN.defaultBlockState());
+            });
         }
     }
 
@@ -93,14 +110,11 @@ public class PortalBlock extends NetherPortalBlock {
     @Override
     public BlockState getStateForPlacement(BlockPlaceContext pContext) {
         BlockState pState=this.defaultBlockState();
-        switch (pContext.getHorizontalDirection().getAxis()) {
-            case Z:
-                return pState.setValue(AXIS, Direction.Axis.X);
-            case X:
-                return pState.setValue(AXIS, Direction.Axis.Z);
-            default:
-                return pState;
-        }
+        return switch (pContext.getHorizontalDirection().getAxis()) {
+            case Z -> pState.setValue(AXIS, Direction.Axis.X);
+            case X -> pState.setValue(AXIS, Direction.Axis.Z);
+            default -> pState;
+        };
     }
 
 
@@ -144,13 +158,10 @@ public class PortalBlock extends NetherPortalBlock {
     @SuppressWarnings("deprecation")
     @Override
     public VoxelShape getShape(BlockState state, BlockGetter level, BlockPos pos, CollisionContext context) {
-        switch ((Direction.Axis)state.getValue(AXIS)) {
-            case Z:
-                return Z_AXIS_AABB;
-            case X:
-            default:
-                return X_AXIS_AABB;
-        }
+        return switch ((Direction.Axis) state.getValue(AXIS)) {
+            case Z -> Z_AXIS_AABB;
+            default -> X_AXIS_AABB;
+        };
     }
 
 
