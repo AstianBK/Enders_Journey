@@ -103,7 +103,7 @@ public class Events {
                                     level.setBlock(pos, BKBlocks.PORTAL_NETHER.get().defaultBlockState().setValue(PortalNetherBlock.AXIS, Direction.Axis.Z).setValue(PortalNetherBlock.ENABLED,true),3);
                                 }
                             }
-                        }else if(eyes==10){
+                        }else if(eyes==16){
                             for (BlockPos pos : BlockPos.betweenClosed(-4,85,27,4,94,27)){
                                 if(level.isEmptyBlock(pos) || level.getBlockState(pos).is(BKBlocks.PORTAL.get())){
                                     BteMobsMod.LOGGER.info("Portal 10");

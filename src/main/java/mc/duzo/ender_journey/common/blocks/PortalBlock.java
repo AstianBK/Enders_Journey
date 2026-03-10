@@ -65,7 +65,7 @@ public class PortalBlock extends NetherPortalBlock {
                     this.handleTeleportation(entity);
                 } else {
                     portalPlayer.ifPresent(handler -> {
-                        if(handler.getEyesEarn()>=10){
+                        if(handler.getEyesEarn()>=16){
                             handler.setInPortal(true);
                             this.handleTeleportation(entity);
                             handler.setPortalTimer(0);
