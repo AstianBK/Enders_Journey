@@ -166,6 +166,7 @@ public class BKPortalForcer implements ITeleporter {
 
         return level.getSharedSpawnPos();
     }
+
     private static boolean isSafeSurface(ServerLevel level, BlockPos pos) {
 
         BlockState floor = level.getBlockState(pos.below());
@@ -184,6 +185,7 @@ public class BKPortalForcer implements ITeleporter {
 
         return true;
     }
+
     public static BlockPos findSafeNetherCave(ServerLevel level, RandomSource random) {
 
         ChunkGenerator generator = level.getChunkSource().getGenerator();
@@ -220,6 +222,7 @@ public class BKPortalForcer implements ITeleporter {
 
         return level.getSharedSpawnPos();
     }
+
     public Optional<BlockUtil.FoundRectangle> createPortal(BlockPos pos, Direction.Axis axis) {
         Direction direction = Direction.get(Direction.AxisDirection.POSITIVE, axis);
         double d0 = -1.0;
