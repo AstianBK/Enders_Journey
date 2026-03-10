@@ -33,8 +33,11 @@ import net.minecraft.world.level.block.state.properties.BooleanProperty;
 import net.minecraft.world.phys.Vec3;
 import net.minecraft.world.phys.shapes.CollisionContext;
 import net.minecraft.world.phys.shapes.VoxelShape;
+import net.minecraftforge.common.util.ITeleporter;
 import net.minecraftforge.common.util.LazyOptional;
 import org.jetbrains.annotations.Nullable;
+
+import java.util.function.Function;
 
 public class PortalBlock extends NetherPortalBlock {
     public static final BooleanProperty ENABLED = BlockStateProperties.ENABLED;
@@ -81,32 +84,42 @@ public class PortalBlock extends NetherPortalBlock {
     private void handleTeleportation(Entity entity) {
         MinecraftServer server = entity.level.getServer();
         ResourceKey<Level> destinationKey = entity.level.dimension() == destinationDimension() ? returnDimension() : destinationDimension();
+
         if (server != null) {
             ServerLevel destinationLevel = server.getLevel(destinationKey);
-            if (destinationLevel != null && !entity.isPassenger()) {
+
+            if (destinationLevel != null) {
+
                 entity.level.getProfiler().push("portal");
-                BlockPos platform = new BlockPos(-8, 52, -13);
 
-                destinationLevel.getChunk(platform);
+                entity.changeDimension(destinationLevel, new ITeleporter() {
 
-                //createEndPlatform(destinationLevel, platform);
+                    @Override
+                    public Entity placeEntity(Entity entity, ServerLevel currentWorld, ServerLevel destWorld,
+                                              float yaw, Function<Boolean, Entity> repositionEntity) {
 
-                Vec3 tp = Vec3.atCenterOf(platform.above());
+                        Entity teleported = repositionEntity.apply(false);
 
-                ((ServerPlayer)entity).teleportTo(destinationLevel, tp.x, tp.y, tp.z, entity.getYRot(), entity.getXRot());                entity.level.getProfiler().pop();
+                        BlockPos platform = new BlockPos(-8, 51, -13);
+
+                        destWorld.getChunk(platform);
+
+                        Vec3 tp = Vec3.atCenterOf(platform.above());
+
+                        teleported.teleportTo(tp.x, tp.y, tp.z);
+
+                        teleported.setDeltaMovement(Vec3.ZERO);
+                        teleported.fallDistance = 0;
+
+                        return teleported;
+                    }
+                });
+
+                entity.level.getProfiler().pop();
             }
         }
     }
-    public static void createEndPlatform(ServerLevel level, BlockPos center) {
 
-        BlockPos.betweenClosed(center.offset(-2, 1, -2), center.offset(2, 3, 2)).forEach(pos -> {
-            level.setBlockAndUpdate(pos, Blocks.AIR.defaultBlockState());
-        });
-
-        BlockPos.betweenClosed(center.offset(-2, 0, -2), center.offset(2, 0, 2)).forEach(pos -> {
-            level.setBlockAndUpdate(pos, Blocks.OBSIDIAN.defaultBlockState());
-        });
-    }
 
 
     @Nullable
