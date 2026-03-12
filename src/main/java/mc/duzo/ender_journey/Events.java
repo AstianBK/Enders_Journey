@@ -84,6 +84,7 @@ public class Events {
     }
     @SubscribeEvent
     public static void onAdvancementEarn(AdvancementEvent.AdvancementEarnEvent event){
+
         if(DimensionUtil.eyesLocation.contains(event.getAdvancement().getId())){
             PortalPlayer.get(event.getEntity()).ifPresent(portalPlayer -> {
                 if(!portalPlayer.getList().contains(event.getAdvancement().getId())){
@@ -106,13 +107,12 @@ public class Events {
                         }else if(eyes==16){
                             for (BlockPos pos : BlockPos.betweenClosed(-4,85,27,4,94,27)){
                                 if(level.isEmptyBlock(pos) || level.getBlockState(pos).is(BKBlocks.PORTAL.get())){
-                                    BteMobsMod.LOGGER.info("Portal 10");
                                     level.setBlock(pos, BKBlocks.PORTAL.get().defaultBlockState().setValue(PortalBlock.ENABLED,true),3);
                                 }
                             }
                         }else if(eyes==24){
                             for(BlockPos pos : BlockPos.betweenClosed(new BlockPos(-9,51,-10),new BlockPos(9,51,10))){
-                                if(level.isEmptyBlock(pos)){
+                                if(level.isEmptyBlock(pos) || level.getBlockState(pos).is(BKBlocks.THE_NEW_END_PORTAL.get())){
                                     level.setBlock(pos, BKBlocks.THE_NEW_END_PORTAL.get().defaultBlockState().setValue(TheNewEndPortalBlock.ENABLED,true),3);
                                 }
                             }

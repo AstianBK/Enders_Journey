@@ -126,6 +126,8 @@ public class RealmManager implements Savable {
 		private boolean isPlaced;
 		private boolean plataformPlaced;
 		private BlockPos centre;
+		private Map<String,BlockPos> dimensionTp = new HashMap<>();
+
 		private final int[] posElevator=new int[]{1,-1};
 		private final List<BlockPos> posElevators=List.of(new BlockPos(0,53,-38),new BlockPos(0,80,-38),new BlockPos(0,112,-38));
 		public Structure(ResourceLocation structure, @Nullable BlockPos centre) {
@@ -154,6 +156,18 @@ public class RealmManager implements Savable {
 			if (this.centre != null)
 				data.put("Centre", NbtUtils.writeBlockPos(this.centre));
 
+
+			if(!this.dimensionTp.isEmpty()){
+				ListTag tags = new ListTag();
+				this.dimensionTp.forEach((s, pos) -> {
+					CompoundTag nbt = new CompoundTag();
+					nbt.put("pos",NbtUtils.writeBlockPos(pos));
+					nbt.putString("key",s);
+					tags.add(nbt);
+				});
+				data.put("dimensionTps",tags);
+			}
+			EndersJourney.LOGGER.debug("save :"+data);
 			return data;
 		}
 
@@ -163,6 +177,16 @@ public class RealmManager implements Savable {
 			this.plataformPlaced = data.getBoolean("plataformPlaced");
 			if (data.contains("Centre")) {
 				this.centre = NbtUtils.readBlockPos(data.getCompound("Centre"));
+			}
+			if(data.contains("dimensionTps")){
+				Map<String,BlockPos> var = new HashMap<>();
+
+				ListTag tags = data.getList("dimensionTps",10);
+				for(int i = 0 ; i < tags.size() ; i++){
+					CompoundTag tag = tags.getCompound(i);
+					var.put(tag.getString("key"),NbtUtils.readBlockPos(tag.getCompound("pos")));
+				}
+				this.dimensionTp = var;
 			}
 		}
 
@@ -409,6 +433,23 @@ public class RealmManager implements Savable {
 					.forEach(p -> level.getChunkSource().getLightEngine().checkBlock(p));
 			EndersJourney.LOGGER.info("Placed " + this + " at " + offset + " in " + (System.currentTimeMillis() - start) + "ms");
 		}
+		public void setTpPosForDimension(BlockPos pos,String dimension){
+			if(dimensionTp.containsKey(dimension)){
+				Map<String,BlockPos> var = new HashMap<>();
+				for (Map.Entry<String,BlockPos> entry : dimensionTp.entrySet()){
+					if(!dimension.equals(entry.getKey())){
+						var.put(entry.getKey(),entry.getValue());
+					}
+				}
+				var.put(dimension,pos);
+				dimensionTp = var;
+			}else {
+				dimensionTp.put(dimension,pos);
+			}
+		}
+		public BlockPos getTpPosForDimension(String dimension){
+			return this.dimensionTp.containsKey(dimension) ? this.dimensionTp.get(dimension) : null;
+		}
 
 		public boolean placeInWorld(StructureTemplate component, ServerLevelAccessor world, BlockPos templatePos, BlockPos offsetPos, StructurePlaceSettings settings, RandomSource random, int flags) {
 			if (component.palettes.isEmpty()) return false;
@@ -581,7 +622,6 @@ public class RealmManager implements Savable {
 		private final UUID id;
 		private ServerPlayer playerCache;
 		private boolean firstTp = true;
-		private Map<String,BlockPos> dimensionTp = new HashMap<>();
 		private BlockPos tpPos = null;
 		public RealmPlayer(UUID id) {
 			this.id = id;
@@ -601,57 +641,19 @@ public class RealmManager implements Savable {
 
 			return EndersJourney.getServer().getPlayerList().getPlayer(this.id);
 		}
-		public void setTpPosForDimension(BlockPos pos,String dimension){
-			if(dimensionTp.containsKey(dimension)){
-				Map<String,BlockPos> var = new HashMap<>();
-				for (Map.Entry<String,BlockPos> entry : dimensionTp.entrySet()){
-					if(!dimension.equals(entry.getKey())){
-						var.put(entry.getKey(),entry.getValue());
-					}
-				}
-				var.put(dimension,pos);
-				dimensionTp = var;
-			}else {
-				dimensionTp.put(dimension,pos);
-			}
-		}
-		public BlockPos getTpPosForDimension(String dimension){
-			return this.dimensionTp.containsKey(dimension) ? this.dimensionTp.get(dimension) : null;
-		}
 
 		@Override
 		public CompoundTag serialise() {
 			CompoundTag data = new CompoundTag();
 
-			data.putUUID("ID", this.id);
-			if(!this.dimensionTp.isEmpty()){
-				ListTag tags = new ListTag();
-				this.dimensionTp.forEach((s, pos) -> {
-					CompoundTag nbt = new CompoundTag();
-					nbt.put("pos",NbtUtils.writeBlockPos(pos));
-					nbt.putString("key",s);
-					tags.add(nbt);
-				});
-				data.put("dimensionTps",tags);
-			}
-			EndersJourney.LOGGER.debug("save :"+data);
 
+			data.putUUID("ID", this.id);
 			return data;
 		}
 
 		@Override
 		public void deserialise(CompoundTag data) {
-			EndersJourney.LOGGER.debug("read :"+data);
-			if(data.contains("dimensionTps")){
-				Map<String,BlockPos> var = new HashMap<>();
 
-				ListTag tags = data.getList("dimensionTps",10);
-				for(int i = 0 ; i < tags.size() ; i++){
-					CompoundTag tag = tags.getCompound(i);
-					var.put(tag.getString("key"),NbtUtils.readBlockPos(tag.getCompound("pos")));
-				}
-				this.dimensionTp = var;
-			}
 		}
 	}
 }

@@ -72,12 +72,12 @@ public class BKPortalForcer implements ITeleporter {
         } else {
             WorldBorder worldBorder = destinationLevel.getWorldBorder();
             BlockPos pos;
-            if(ServerData.get().getRealmManager().getPlayer().getPlayerForUUID(entity.getUUID()).getTpPosForDimension(level.dimension().toString())!=null){
-                pos = ServerData.get().getRealmManager().getPlayer().getPlayerForUUID(entity.getUUID()).getTpPosForDimension(level.dimension().toString());
+            if(ServerData.get().getRealmManager().getStructure().getTpPosForDimension(level.dimension().toString())!=null){
+                pos = ServerData.get().getRealmManager().getStructure().getTpPosForDimension(level.dimension().toString());
             }else {
                 if (!this.level.dimension().equals(Level.END)){
                     pos = findSafePosNoise(level,level.random);
-                    ServerData.get().getRealmManager().getPlayer().getPlayerForUUID(entity.getUUID()).setTpPosForDimension(pos,level.dimension().toString());
+                    ServerData.get().getRealmManager().getStructure().setTpPosForDimension(pos,level.dimension().toString());
                 }else {
                     pos = new BlockPos(100, 50, 0);
                 }
