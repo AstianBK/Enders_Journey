@@ -120,6 +120,7 @@ dependencies {
     implementation fg.deobf('fr.shoqapik:BeyondTheEndMobs:1.11.8')
     implementation fg.deobf('com.TBK:beyondtheend:1.0.0')
     implementation fg.deobf("com.patataprojects:anvilchanges:0.5.1-1.19.2")
+    //implementation fg.deobf('eu.asangarin:endereyesgui:1.1.1')
 
     compileOnly(fg.deobf("mezz.jei:jei-${mc_version}-common-api:${jei_version}"))
     compileOnly(fg.deobf("mezz.jei:jei-${mc_version}-forge-api:${jei_version}"))
