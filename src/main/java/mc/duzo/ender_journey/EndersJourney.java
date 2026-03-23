@@ -72,6 +72,7 @@ public class EndersJourney {
             if(ServerData.get().getRealmManager()==null)return;
 
             ServerData.get().getRealmManager().getStructure().verify();
+            ServerData.get().getRealmManager().getStructure().tick();
         }
     }
     @SubscribeEvent
