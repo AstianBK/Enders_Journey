@@ -511,7 +511,7 @@ public class RealmManager implements Savable {
 		}
 
 		public void makeInitialRoom(ServerLevel level, long start) {
-			placeComponent( level, 9, 48, -4, new ResourceLocation(EndersJourney.MODID, "island_center"), new StructurePlaceSettings());
+			placeComponent( level, -4, 48, -4, new ResourceLocation(EndersJourney.MODID, "island_center"), new StructurePlaceSettings());
 		}
 
 		public void makePortals(ServerLevel level, long start) {
@@ -519,7 +519,7 @@ public class RealmManager implements Savable {
 		}
 
 		public void makeSuperiorIsland(ServerLevel level, long start) {
-			placeComponentFull( level, 5, 111, -4, new ResourceLocation(EndersJourney.MODID, "temple"), new StructurePlaceSettings());
+			placeComponentFull( level, 5, 111, -3, new ResourceLocation(EndersJourney.MODID, "temple"), new StructurePlaceSettings());
 		}
 
 		public BlockPos getCentre() {
