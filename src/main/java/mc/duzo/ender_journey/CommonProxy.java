@@ -63,6 +63,8 @@ public class CommonProxy {
         add("twilightforest:firefly_particle_spawner", -22,125,7);
         add("twilightforest:firefly_particle_spawner", -22,127,-7);
         add("twilightforest:firefly_particle_spawner", -22,127,-12);
+
+        add("minecraft:air",68,77,46);
     }
 
     private static void add(String id, int x, int y, int z) {
