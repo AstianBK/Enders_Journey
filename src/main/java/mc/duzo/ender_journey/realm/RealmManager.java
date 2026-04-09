@@ -255,6 +255,7 @@ public class RealmManager implements Savable {
 					for (int j = start; j < start + batchSize && j < placed.size(); j++) {
 						StructureTemplate.StructureBlockInfo info = placed.get(j);
 
+
 						level.setBlock(info.pos, info.state, 3);
 
 						if (info.nbt != null) {
@@ -313,8 +314,6 @@ public class RealmManager implements Savable {
 		}
 
 		public void settingElevator(ServerLevel level){
-			EndersJourney.LOGGER.info("Setting");
-
 			ElevatorGroupCapability cap = ElevatorGroupCapability.get(level);
 			boolean isFirstConfig = true;
 
@@ -366,6 +365,7 @@ public class RealmManager implements Savable {
 				}
 			}
 		}
+
 		private void placeColumn(ServerLevel level) {
 			DimensionUtil.eyeItemForBlockPos.forEach((itemStack, pos) -> {
 				ColumnBlockEntity block = new ColumnBlockEntity(pos, BKBlocks.COLUMN.get().defaultBlockState());
@@ -401,7 +401,7 @@ public class RealmManager implements Savable {
 			makeInitialRoom(level, start);
 			makePortals(level, start);
 
-			placeSign(start, level);
+
 			tasks.add(()->settingElevator(level));
 			placeColumn(level);
 
@@ -415,7 +415,7 @@ public class RealmManager implements Savable {
 					spawnExplorer(level);
 				}
 			});
-
+			placeSign(start, level);
 		}
 
 
@@ -471,8 +471,9 @@ public class RealmManager implements Savable {
 		public void spawnNpc5(ServerLevel level) {
 			Npc5Entity entity = new Npc5Entity(BteMobsEntities.NPC5_ENTITY.get(), level);
 			entity.setPos(0.5F, 80, 0.5F);
-			entity.setYRot(Direction.NORTH.toYRot());
+            entity.setYRot(Direction.NORTH.toYRot());
 			level.addFreshEntity(entity);
+			level.broadcastEntityEvent(entity,(byte) 5);
 		}
 
 		public void spawnWarlock(ServerLevel level) {
@@ -500,9 +501,9 @@ public class RealmManager implements Savable {
 		public void placeSign(long start, ServerLevel level) {
 			StructurePlaceSettings settings = new StructurePlaceSettings().setRotation(Rotation.CLOCKWISE_180);
 
-			placeComponent( level, 11, 119, 6, new ResourceLocation(EndersJourney.MODID, "cartel_cognition"), settings);
-			placeComponent( level, -11, 119, 6, new ResourceLocation(EndersJourney.MODID, "cartel_waystone"), settings);
-			placeComponent( level, 6, 119, 11, new ResourceLocation(EndersJourney.MODID, "cartel_ocultismo"), settings);
+			placeComponent( level, 11, 119, 0, new ResourceLocation(EndersJourney.MODID, "cartel_cognition"), settings);
+			placeComponent( level, -11, 119, 0, new ResourceLocation(EndersJourney.MODID, "cartel_waystone"), settings);
+			placeComponent( level, 0, 119, 11, new ResourceLocation(EndersJourney.MODID, "cartel_ocultismo"), settings);
 		}
 
 
