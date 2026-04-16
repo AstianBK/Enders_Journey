@@ -16,7 +16,7 @@ public interface PortalPlayer extends INBTSerializable<CompoundTag> {
     void setEyesEarn(int value);
     void plusEye(ResourceLocation location);
     void addEye(ResourceLocation location);
-
+    void sync();
     static LazyOptional<PortalPlayer> get(Player player) {
         return player.getCapability(BkCapabilities.PORTAL_PLAYER_CAPABILITY);
     }
@@ -61,4 +61,7 @@ public interface PortalPlayer extends INBTSerializable<CompoundTag> {
     boolean haveEye(ResourceLocation location);
 
     int checkEyes(Level level);
+
+    boolean visitTwilightForest();
+    void setVisitTwilightForest(boolean flag);
 }

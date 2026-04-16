@@ -15,17 +15,21 @@ import java.util.function.Supplier;
 
 public class PacketSync implements Packet<PacketListener> {
     private final int eye;
+    private final boolean isVisitForest;
     public PacketSync(FriendlyByteBuf buf) {
         this.eye =buf.readInt();
+        this.isVisitForest = buf.readBoolean();
     }
 
-    public PacketSync(int pos) {
+    public PacketSync(int pos,boolean isVisitForest) {
         this.eye =pos;
+        this.isVisitForest = isVisitForest;
     }
 
     @Override
     public void write(FriendlyByteBuf buf) {
         buf.writeInt(this.eye);
+        buf.writeBoolean(this.isVisitForest);
     }
 
     public void handle(Supplier<NetworkEvent.Context> context) {
@@ -38,6 +42,7 @@ public class PacketSync implements Packet<PacketListener> {
         assert player!=null;
         var portalPlayer=PortalPlayer.get(player).orElse(null);
         portalPlayer.setEyesEarn(this.eye);
+        portalPlayer.setVisitTwilightForest(this.isVisitForest);
     }
 
 

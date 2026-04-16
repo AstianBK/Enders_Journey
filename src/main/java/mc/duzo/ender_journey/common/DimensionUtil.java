@@ -115,7 +115,7 @@ public class DimensionUtil {
         if(eyeEarn!=eyeForAdv){
             player.setEyesEarn(eyeForAdv);
             if(!level.isClientSide){
-                PacketHandler.sendToPlayer(new PacketSync(eyeForAdv), (ServerPlayer) player.getPlayer());
+                PacketHandler.sendToPlayer(new PacketSync(eyeForAdv,player.visitTwilightForest()), (ServerPlayer) player.getPlayer());
             }
             return eyeForAdv;
         }else {
