@@ -46,6 +46,7 @@ public class PortalPlayerCapability implements PortalPlayer{
     private float portalAnimTime;
     private boolean isInPortal;
 
+    private boolean visitTwilightForest = false;
     private int eyesEarn;
     private List<ResourceLocation> eyesEarns=new ArrayList<>();
 
@@ -68,11 +69,19 @@ public class PortalPlayerCapability implements PortalPlayer{
         this.eyesEarn=value;
     }
 
+    @Override
+    public boolean visitTwilightForest() {
+        return visitTwilightForest;
+    }
+
     public void addEye(ResourceLocation location){
         this.eyesEarns.add(location);
         if(this.player instanceof ServerPlayer){
             PacketHandler.sendToPlayer(new PacketCloneSync(this.eyesEarns), (ServerPlayer) player);
         }
+    }
+    public void sync() {
+        PacketHandler.sendToPlayer(new PacketSync(this.eyesEarn,this.visitTwilightForest()), (ServerPlayer) player);
     }
     @Override
     public void plusEye(ResourceLocation location) {
@@ -100,11 +109,17 @@ public class PortalPlayerCapability implements PortalPlayer{
 
             }
 
-            PacketHandler.sendToPlayer(new PacketSync(this.eyesEarn), (ServerPlayer) player);
+            PacketHandler.sendToPlayer(new PacketSync(this.eyesEarn,this.visitTwilightForest()), (ServerPlayer) player);
         }
         this.addEye(location);
 
     }
+
+    @Override
+    public void setVisitTwilightForest(boolean visitTwilightForest) {
+        this.visitTwilightForest = visitTwilightForest;
+    }
+
 
     public static Item getItem(ResourceLocation location) {
         Holder<Item> holder=ForgeRegistries.ITEMS.getHolder(location).orElse(null);
@@ -262,6 +277,7 @@ public class PortalPlayerCapability implements PortalPlayer{
             }
             tag.put("eyesEarns",listTag);
         }
+        tag.putBoolean("visitTwilightForest",this.visitTwilightForest);
         return tag;
     }
 
@@ -275,6 +291,7 @@ public class PortalPlayerCapability implements PortalPlayer{
                 this.eyesEarns.add(new ResourceLocation(tag.getString("id")));
             }
         }
+        this.visitTwilightForest = nbt.getBoolean("visitTwilightForest");
     }
 
     private void handleAetherPortal() {

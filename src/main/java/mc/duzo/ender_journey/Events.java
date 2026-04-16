@@ -19,7 +19,8 @@ import mc.duzo.ender_journey.network.message.PacketUpdateChuck;
 import net.minecraft.core.Direction;
 import net.minecraft.resources.ResourceKey;
 import net.minecraft.resources.ResourceLocation;
-import net.minecraft.server.level.ServerLevel;
+ import net.minecraft.server.MinecraftServer;
+ import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.InteractionHand;
 import net.minecraft.world.entity.Entity;
@@ -73,9 +74,11 @@ public class Events {
                     portalPlayer.setEyesEarn(eyes);
                     portalPlayer.setListEye(new ArrayList<>());
                     DimensionUtil.getEyesEarn(((AdvancementsProgressAccessor)player1.getAdvancements()).list(),portalPlayer);
+                    portalPlayer.setVisitTwilightForest(false);
+                    portalPlayer.sync();
 
                     if(!player.level.isClientSide){
-                        PacketHandler.sendToPlayer(new PacketSync(eyes), player1);
+                        PacketHandler.sendToPlayer(new PacketSync(eyes,portalPlayer.visitTwilightForest()), player1);
                     }
                 }
 
@@ -84,7 +87,12 @@ public class Events {
     }
     @SubscribeEvent
     public static void onAdvancementEarn(AdvancementEvent.AdvancementEarnEvent event){
-
+        if(event.getAdvancement().getId().toString().contains("twilightforest:root")){
+            PortalPlayer.get(event.getEntity()).ifPresent(portalPlayer -> {
+                portalPlayer.setVisitTwilightForest(true);
+                portalPlayer.sync();
+            });
+        }
         if(DimensionUtil.eyesLocation.contains(event.getAdvancement().getId())){
             PortalPlayer.get(event.getEntity()).ifPresent(portalPlayer -> {
                 if(!portalPlayer.getList().contains(event.getAdvancement().getId())){
@@ -94,10 +102,10 @@ public class Events {
                             giveHeartContainer(player);
                         });
                     });
-                    placeOrReloadStorage(portalPlayer.getPlayer().level,portalPlayer.getEyesEarn());
                     int eyes = portalPlayer.getEyesEarn();
                     ServerLevel level=EndersJourney.getServer().getLevel(EnderDimensions.REALM_KEY);
                     if(level!=null){
+                        placeOrReloadStorage(level,portalPlayer.getEyesEarn());
                         if (eyes==8){
                             for (BlockPos pos : BlockPos.betweenClosed(-31,84,-4,-31,94,3)){
                                 if(level.isEmptyBlock(pos) || level.getBlockState(pos).is(BKBlocks.PORTAL_NETHER.get())){
@@ -282,7 +290,7 @@ public class Events {
                 int eyes=DimensionUtil.getEyesEarn(((AdvancementsProgressAccessor)player1.getAdvancements()).list(),portalPlayer);
                 portalPlayer.setEyesEarn(eyes);
                 if(!player.level.isClientSide){
-                    PacketHandler.sendToPlayer(new PacketSync(eyes), (ServerPlayer) player);
+                    PacketHandler.sendToPlayer(new PacketSync(eyes,portalPlayer.visitTwilightForest()), (ServerPlayer) player);
                 }
             }
         });
@@ -318,7 +326,7 @@ public class Events {
                 int eyes=DimensionUtil.getEyesEarn(((AdvancementsProgressAccessor)player1.getAdvancements()).list(),portalPlayer);
                 portalPlayer.setEyesEarn(eyes);
                 if(!player.level.isClientSide){
-                    PacketHandler.sendToPlayer(new PacketSync(eyes), (ServerPlayer) player);
+                    PacketHandler.sendToPlayer(new PacketSync(eyes,portalPlayer.visitTwilightForest()), (ServerPlayer) player);
                 }
             }
         });
@@ -335,7 +343,7 @@ public class Events {
                 portalPlayer.setEyesEarn(eyes);
 
                 if(!player.level.isClientSide){
-                    PacketHandler.sendToPlayer(new PacketSync(eyes), (ServerPlayer) player);
+                    PacketHandler.sendToPlayer(new PacketSync(eyes,portalPlayer.visitTwilightForest()), (ServerPlayer) player);
                 }
             }
         });
