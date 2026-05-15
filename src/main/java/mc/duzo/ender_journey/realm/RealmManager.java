@@ -61,7 +61,6 @@ import vazkii.quark.base.Quark;
 import vazkii.quark.base.block.QuarkBlock;
 import vazkii.quark.base.block.QuarkBlockWrapper;
 
-import net.minecraft.commands.CommandSourceStack;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.world.level.Level;
 import mc.duzo.ender_journey.common.blocks.BKPortalForcer;
@@ -578,6 +577,16 @@ public class RealmManager implements Savable {
 		public void onLeave(Player player) {
 
 		}
+		private static void setScoreboardValue(net.minecraft.world.scores.Scoreboard sb, String name, int value) {
+			net.minecraft.world.scores.Objective obj = sb.getObjective(name);
+			if (obj == null) {
+				obj = sb.addObjective(name, net.minecraft.world.scores.criteria.ObjectiveCriteria.DUMMY,
+						net.minecraft.network.chat.Component.literal(name),
+						net.minecraft.world.scores.criteria.ObjectiveCriteria.RenderType.INTEGER);
+			}
+			sb.getOrCreatePlayerScore("WORLD", obj).setScore(value);
+		}
+
 		public void onRespawn(Player player) {
 			if (player instanceof ServerPlayer) {
 				this.runSpawnLogic((ServerPlayer) player);
@@ -603,28 +612,21 @@ public class RealmManager implements Savable {
 					BlockPos overworldSpawn = player.blockPosition();
 					EndersJourney.LOGGER.info("[EJ] Overworld spawn captured at: " + overworldSpawn);
 
-					CommandSourceStack src = server.createCommandSourceStack();
+					net.minecraft.world.scores.Scoreboard sb = server.getScoreboard();
 
-					// Overworld spawn scoreboards
-					server.getCommands().performPrefixedCommand(src, "scoreboard objectives add ej_spawn_x dummy");
-					server.getCommands().performPrefixedCommand(src, "scoreboard objectives add ej_spawn_y dummy");
-					server.getCommands().performPrefixedCommand(src, "scoreboard objectives add ej_spawn_z dummy");
-					server.getCommands().performPrefixedCommand(src, "scoreboard players set WORLD ej_spawn_x " + overworldSpawn.getX());
-					server.getCommands().performPrefixedCommand(src, "scoreboard players set WORLD ej_spawn_y " + overworldSpawn.getY());
-					server.getCommands().performPrefixedCommand(src, "scoreboard players set WORLD ej_spawn_z " + overworldSpawn.getZ());
+					// Overworld spawn — write directly to scoreboard API (no chat output)
+					setScoreboardValue(sb, "ej_spawn_x", overworldSpawn.getX());
+					setScoreboardValue(sb, "ej_spawn_y", overworldSpawn.getY());
+					setScoreboardValue(sb, "ej_spawn_z", overworldSpawn.getZ());
 
-					// Use findSafeNetherCave to find a proper safe spawn in the Nether —
-					// same method used by BKPortalForcer, finds solid floor with air above.
+					// Nether spawn — use findSafeNetherCave, same method as BKPortalForcer
 					ServerLevel netherLevel = server.getLevel(Level.NETHER);
 					if (netherLevel != null) {
 						BlockPos netherSpawn = BKPortalForcer.findSafeNetherCave(netherLevel, netherLevel.random);
 						EndersJourney.LOGGER.info("[EJ] Nether spawn found at: " + netherSpawn);
-						server.getCommands().performPrefixedCommand(src, "scoreboard objectives add ej_nether_x dummy");
-						server.getCommands().performPrefixedCommand(src, "scoreboard objectives add ej_nether_y dummy");
-						server.getCommands().performPrefixedCommand(src, "scoreboard objectives add ej_nether_z dummy");
-						server.getCommands().performPrefixedCommand(src, "scoreboard players set WORLD ej_nether_x " + netherSpawn.getX());
-						server.getCommands().performPrefixedCommand(src, "scoreboard players set WORLD ej_nether_y " + netherSpawn.getY());
-						server.getCommands().performPrefixedCommand(src, "scoreboard players set WORLD ej_nether_z " + netherSpawn.getZ());
+						setScoreboardValue(sb, "ej_nether_x", netherSpawn.getX());
+						setScoreboardValue(sb, "ej_nether_y", netherSpawn.getY());
+						setScoreboardValue(sb, "ej_nether_z", netherSpawn.getZ());
 					}
 				}
 			}
