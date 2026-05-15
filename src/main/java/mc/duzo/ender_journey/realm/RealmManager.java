@@ -632,7 +632,12 @@ public class RealmManager implements Savable {
 			}
 
 			this.parent.teleport(player);
+			// First spawn: set respawn at centre (0, 142, 0) so the player lands correctly.
 			player.setRespawnPosition(RealmManager.getDimension().dimension(), this.parent.getStructure().getCentre(), 0, true, false);
+
+			// Then immediately update respawn to the permanent spawnpoint (0, 116, 0) facing West.
+			// West = yRot 90.0f in Minecraft coordinate system.
+			player.setRespawnPosition(RealmManager.getDimension().dimension(), new BlockPos(0, 116, 0), 90.0f, true, false);
 
 			this.addPlayer(player);
 		}
