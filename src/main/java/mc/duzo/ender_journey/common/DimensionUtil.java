@@ -124,7 +124,7 @@ public class DimensionUtil {
     }
     public static void startInBEL(Player player) {
         PortalPlayer.get(player).ifPresent(portalPlayer->{
-            if (portalPlayer.canSpawnInAether()) { // Checks if the player has been set to spawn in the Aether.
+if (portalPlayer.canSpawnInAether()) { // Checks if the player has been set to spawn in the Aether.
                 if (player instanceof ServerPlayer serverPlayer) {
                     MinecraftServer server = serverPlayer.level.getServer();
                     if (server != null) {

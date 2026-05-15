@@ -61,6 +61,9 @@ import vazkii.quark.base.Quark;
 import vazkii.quark.base.block.QuarkBlock;
 import vazkii.quark.base.block.QuarkBlockWrapper;
 
+import net.minecraft.commands.CommandSourceStack;
+import net.minecraft.server.MinecraftServer;
+import net.minecraft.world.level.Level;
 import java.util.*;
 import java.util.concurrent.ExecutionException;
 
@@ -295,7 +298,6 @@ public class RealmManager implements Savable {
 			if (level == null ) return;
 
 			this.isPlaced = true;
-
 
 			long start = System.currentTimeMillis();
 
@@ -588,6 +590,26 @@ public class RealmManager implements Savable {
 				return;
 			}
 			if (this.parent.getStructure().getCentre() == null && getDimension()==null) return;
+
+			// Player is still in the Overworld at this point — capture their spawn
+			// position before teleporting to the Realm. The player will never see
+			// the Overworld — the teleport happens on the same tick as login.
+			MinecraftServer server = player.getServer();
+			if (server != null && player.level.dimension() == Level.OVERWORLD) {
+				net.minecraft.world.scores.Scoreboard scoreboard = server.getScoreboard();
+				boolean alreadyCalculated = scoreboard.getObjective("ej_spawn_x") != null;
+				if (!alreadyCalculated) {
+					BlockPos overworldSpawn = player.blockPosition();
+					EndersJourney.LOGGER.info("[EJ] Overworld spawn captured at: " + overworldSpawn);
+					CommandSourceStack src = server.createCommandSourceStack();
+					server.getCommands().performPrefixedCommand(src, "scoreboard objectives add ej_spawn_x dummy");
+					server.getCommands().performPrefixedCommand(src, "scoreboard objectives add ej_spawn_y dummy");
+					server.getCommands().performPrefixedCommand(src, "scoreboard objectives add ej_spawn_z dummy");
+					server.getCommands().performPrefixedCommand(src, "scoreboard players set WORLD ej_spawn_x " + overworldSpawn.getX());
+					server.getCommands().performPrefixedCommand(src, "scoreboard players set WORLD ej_spawn_y " + overworldSpawn.getY());
+					server.getCommands().performPrefixedCommand(src, "scoreboard players set WORLD ej_spawn_z " + overworldSpawn.getZ());
+				}
+			}
 
 			this.parent.teleport(player);
 			player.setRespawnPosition(RealmManager.getDimension().dimension(), this.parent.getStructure().getCentre(), 0, true, false);

@@ -19,6 +19,8 @@ import net.minecraft.util.Mth;
 import net.minecraft.util.RandomSource;
 import net.minecraft.world.entity.Entity;
 import net.minecraft.world.level.Level;
+import net.minecraft.world.scores.Scoreboard;
+import net.minecraft.world.scores.Objective;
 import net.minecraft.world.level.biome.Biome;
 import net.minecraft.world.level.block.Blocks;
 import net.minecraft.world.level.block.state.BlockState;
@@ -72,15 +74,26 @@ public class BKPortalForcer implements ITeleporter {
         } else {
             WorldBorder worldBorder = destinationLevel.getWorldBorder();
             BlockPos pos;
-            if(ServerData.get().getRealmManager().getStructure().getTpPosForDimension(level.dimension().toString())!=null){
-                pos = ServerData.get().getRealmManager().getStructure().getTpPosForDimension(level.dimension().toString());
-            }else {
-                if (!this.level.dimension().equals(Level.END)){
-                    pos = findSafePosNoise(level,level.random);
-                    ServerData.get().getRealmManager().getStructure().setTpPosForDimension(pos,level.dimension().toString());
-                }else {
-                    pos = new BlockPos(100, 50, 0);
+            if (destinationLevel.dimension() == Level.OVERWORLD) {
+                // Read spawn coordinates captured at first login from scoreboards
+                Scoreboard scoreboard = destinationLevel.getServer().getScoreboard();
+                Objective objX = scoreboard.getObjective("ej_spawn_x");
+                Objective objY = scoreboard.getObjective("ej_spawn_y");
+                Objective objZ = scoreboard.getObjective("ej_spawn_z");
+                if (objX != null && objZ != null) {
+                    int spawnX = scoreboard.getOrCreatePlayerScore("WORLD", objX).getScore();
+                    int spawnY = objY != null ? scoreboard.getOrCreatePlayerScore("WORLD", objY).getScore() : 64;
+                    int spawnZ = scoreboard.getOrCreatePlayerScore("WORLD", objZ).getScore();
+                    pos = new BlockPos(spawnX, spawnY, spawnZ);
+                    EndersJourney.LOGGER.info("[EJ] Portal destination from scoreboard: " + pos);
+                } else {
+                    pos = findSafePosNoise(level, level.random);
+                    EndersJourney.LOGGER.warn("[EJ] Scoreboard not found, using random spawn: " + pos);
                 }
+            } else if (this.level.dimension().equals(Level.END)) {
+                pos = new BlockPos(100, 50, 0);
+            } else {
+                pos = new BlockPos(100, 50, 0);
             }
             BlockPos finalPos = pos;
             return this.getExitPortal(entity, finalPos, worldBorder).map((rectangle) -> {
@@ -147,8 +160,8 @@ public class BKPortalForcer implements ITeleporter {
 
         for (int tries = 0; tries < 20; tries++) {
 
-            int x = random.nextInt(2000) - 1000;
-            int z = random.nextInt(2000) - 1000;
+            int x = random.nextInt(500) - 250;
+            int z = random.nextInt(500) - 250;
 
             int y = generator.getBaseHeight(x, z, Heightmap.Types.MOTION_BLOCKING_NO_LEAVES, level, randomState);
 
