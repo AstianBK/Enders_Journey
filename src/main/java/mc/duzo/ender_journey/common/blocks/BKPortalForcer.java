@@ -74,9 +74,9 @@ public class BKPortalForcer implements ITeleporter {
         } else {
             WorldBorder worldBorder = destinationLevel.getWorldBorder();
             BlockPos pos;
+            Scoreboard scoreboard = destinationLevel.getServer().getScoreboard();
             if (destinationLevel.dimension() == Level.OVERWORLD) {
-                // Read spawn coordinates captured at first login from scoreboards
-                Scoreboard scoreboard = destinationLevel.getServer().getScoreboard();
+                // Read Overworld spawn captured at first login
                 Objective objX = scoreboard.getObjective("ej_spawn_x");
                 Objective objY = scoreboard.getObjective("ej_spawn_y");
                 Objective objZ = scoreboard.getObjective("ej_spawn_z");
@@ -85,12 +85,27 @@ public class BKPortalForcer implements ITeleporter {
                     int spawnY = objY != null ? scoreboard.getOrCreatePlayerScore("WORLD", objY).getScore() : 64;
                     int spawnZ = scoreboard.getOrCreatePlayerScore("WORLD", objZ).getScore();
                     pos = new BlockPos(spawnX, spawnY, spawnZ);
-                    EndersJourney.LOGGER.info("[EJ] Portal destination from scoreboard: " + pos);
+                    EndersJourney.LOGGER.info("[EJ] Overworld portal destination: " + pos);
                 } else {
                     pos = findSafePosNoise(level, level.random);
-                    EndersJourney.LOGGER.warn("[EJ] Scoreboard not found, using random spawn: " + pos);
+                    EndersJourney.LOGGER.warn("[EJ] Overworld scoreboard not found, using random spawn: " + pos);
                 }
-            } else if (this.level.dimension().equals(Level.END)) {
+            } else if (destinationLevel.dimension() == Level.NETHER) {
+                // Read Nether spawn calculated from Overworld spawn / 8
+                Objective objX = scoreboard.getObjective("ej_nether_x");
+                Objective objY = scoreboard.getObjective("ej_nether_y");
+                Objective objZ = scoreboard.getObjective("ej_nether_z");
+                if (objX != null && objZ != null) {
+                    int netherX = scoreboard.getOrCreatePlayerScore("WORLD", objX).getScore();
+                    int netherY = objY != null ? scoreboard.getOrCreatePlayerScore("WORLD", objY).getScore() : 64;
+                    int netherZ = scoreboard.getOrCreatePlayerScore("WORLD", objZ).getScore();
+                    pos = new BlockPos(netherX, netherY, netherZ);
+                    EndersJourney.LOGGER.info("[EJ] Nether portal destination: " + pos);
+                } else {
+                    pos = findSafePosNoise(level, level.random);
+                    EndersJourney.LOGGER.warn("[EJ] Nether scoreboard not found, using random spawn: " + pos);
+                }
+            } else if (destinationLevel.dimension() == Level.END) {
                 pos = new BlockPos(100, 50, 0);
             } else {
                 pos = new BlockPos(100, 50, 0);

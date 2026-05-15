@@ -64,6 +64,7 @@ import vazkii.quark.base.block.QuarkBlockWrapper;
 import net.minecraft.commands.CommandSourceStack;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.world.level.Level;
+import mc.duzo.ender_journey.common.blocks.BKPortalForcer;
 import java.util.*;
 import java.util.concurrent.ExecutionException;
 
@@ -601,13 +602,30 @@ public class RealmManager implements Savable {
 				if (!alreadyCalculated) {
 					BlockPos overworldSpawn = player.blockPosition();
 					EndersJourney.LOGGER.info("[EJ] Overworld spawn captured at: " + overworldSpawn);
+
 					CommandSourceStack src = server.createCommandSourceStack();
+
+					// Overworld spawn scoreboards
 					server.getCommands().performPrefixedCommand(src, "scoreboard objectives add ej_spawn_x dummy");
 					server.getCommands().performPrefixedCommand(src, "scoreboard objectives add ej_spawn_y dummy");
 					server.getCommands().performPrefixedCommand(src, "scoreboard objectives add ej_spawn_z dummy");
 					server.getCommands().performPrefixedCommand(src, "scoreboard players set WORLD ej_spawn_x " + overworldSpawn.getX());
 					server.getCommands().performPrefixedCommand(src, "scoreboard players set WORLD ej_spawn_y " + overworldSpawn.getY());
 					server.getCommands().performPrefixedCommand(src, "scoreboard players set WORLD ej_spawn_z " + overworldSpawn.getZ());
+
+					// Use findSafeNetherCave to find a proper safe spawn in the Nether —
+					// same method used by BKPortalForcer, finds solid floor with air above.
+					ServerLevel netherLevel = server.getLevel(Level.NETHER);
+					if (netherLevel != null) {
+						BlockPos netherSpawn = BKPortalForcer.findSafeNetherCave(netherLevel, netherLevel.random);
+						EndersJourney.LOGGER.info("[EJ] Nether spawn found at: " + netherSpawn);
+						server.getCommands().performPrefixedCommand(src, "scoreboard objectives add ej_nether_x dummy");
+						server.getCommands().performPrefixedCommand(src, "scoreboard objectives add ej_nether_y dummy");
+						server.getCommands().performPrefixedCommand(src, "scoreboard objectives add ej_nether_z dummy");
+						server.getCommands().performPrefixedCommand(src, "scoreboard players set WORLD ej_nether_x " + netherSpawn.getX());
+						server.getCommands().performPrefixedCommand(src, "scoreboard players set WORLD ej_nether_y " + netherSpawn.getY());
+						server.getCommands().performPrefixedCommand(src, "scoreboard players set WORLD ej_nether_z " + netherSpawn.getZ());
+					}
 				}
 			}
 
