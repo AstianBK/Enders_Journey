@@ -67,11 +67,8 @@ public class PortalOverWorldBlock extends Block {
                 } else {
                     portalPlayer.ifPresent(handler -> {
                         handler.setInPortal(true);
-                        int waitTime = handler.getPortalTimer();
-                        if (waitTime >= entity.getPortalWaitTime()) {
-                            this.handleTeleportation(entity);
-                            handler.setPortalTimer(0);
-                        }
+                        this.handleTeleportation(entity);
+                        handler.setPortalTimer(0);
                     });
                 }
             }
