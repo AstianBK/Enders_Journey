@@ -40,6 +40,7 @@ import net.minecraftforge.event.TickEvent;
 import net.minecraftforge.event.entity.EntityJoinLevelEvent;
 import net.minecraftforge.event.entity.EntityTravelToDimensionEvent;
 import net.minecraftforge.event.entity.living.LivingEvent;
+import net.minecraftforge.event.entity.living.LivingFallEvent;
 import net.minecraftforge.event.entity.living.LivingSpawnEvent;
 import net.minecraftforge.event.entity.player.AdvancementEvent;
 import net.minecraftforge.event.entity.player.PlayerEvent;
@@ -350,5 +351,13 @@ public class Events {
     }
 
 
+
+
+    @SubscribeEvent
+    public static void onLivingFall(LivingFallEvent event) {
+        if (EnderDimensions.isInDimension(event.getEntity(), EnderDimensions.REALM_KEY)) {
+            event.setCanceled(true);
+        }
+    }
 
 }
