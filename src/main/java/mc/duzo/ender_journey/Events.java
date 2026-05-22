@@ -97,10 +97,11 @@ public class Events {
         if(DimensionUtil.eyesLocation.contains(event.getAdvancement().getId())){
             PortalPlayer.get(event.getEntity()).ifPresent(portalPlayer -> {
                 if(!portalPlayer.getList().contains(event.getAdvancement().getId())){
+                    portalPlayer.plusEye(event.getAdvancement().getId());
+                    int currentEyeIndex = portalPlayer.getEyesEarn();
                     event.getEntity().level.players().forEach(player -> {
                         PortalPlayer.get(player).ifPresent(portalPlayer1 -> {
-                            portalPlayer.plusEye(event.getAdvancement().getId());
-                            giveHeartContainer(player);
+                            giveHeartContainer(player, currentEyeIndex);
                         });
                     });
                     int eyes = portalPlayer.getEyesEarn();
@@ -175,18 +176,43 @@ public class Events {
         return null;
     }
 
-    private static void giveHeartContainer(Player player) {
-        Item heart=PortalPlayerCapability.getItem(new ResourceLocation("paraglider","heart_container"));
-        if(heart!=null){
+    /**
+     * Número de heart containers a dar en cada ojo (índice 0 = ojo 1, índice 23 = ojo 24).
+     * Total acumulado: 20 corazones.
+     * Curva: lenta al inicio, más frecuente a partir del ojo 8.
+     */
+    private static final int[] HEARTS_PER_EYE = {
+        0, 0, 1, 0, 1, 0, 1, 1,   // ojos  1-8  → acumulado: 4
+        0, 1, 1, 1, 1, 1, 1, 1,   // ojos  9-16 → acumulado: 11
+        1, 1, 1, 1, 2, 2, 1, 0,   // ojos 17-24 → acumulado: 20 (ojo 24 queda sin corazón — opcional ajustar)
+    };
+
+    private static void giveHeartContainer(Player player, int eyeIndex) {
+        if (eyeIndex < 1 || eyeIndex > HEARTS_PER_EYE.length) return;
+
+        int heartsToGive = HEARTS_PER_EYE[eyeIndex - 1];
+        if (heartsToGive <= 0) return;
+
+        Item heart = PortalPlayerCapability.getItem(new ResourceLocation("paraglider", "heart_container"));
+        if (heart != null) {
             if (!player.level.isClientSide) {
-                ItemStack stack=new ItemStack(heart);
-                if(!player.getAbilities().instabuild){
-                    if (!player.addItem(stack)) {
-                        player.spawnAtLocation(new ItemStack(heart));
+                if (!player.getAbilities().instabuild) {
+                    for (int i = 0; i < heartsToGive; i++) {
+                        ItemStack stack = new ItemStack(heart);
+                        if (!player.addItem(stack)) {
+                            player.spawnAtLocation(stack);
+                        }
                     }
+                    // Mensaje al jugador (i18n)
+                    net.minecraft.network.chat.MutableComponent msg = heartsToGive == 1
+                        ? net.minecraft.network.chat.Component.translatable(
+                            "message.ender_journey.heart_container_single")
+                        : net.minecraft.network.chat.Component.translatable(
+                            "message.ender_journey.heart_container_multiple", heartsToGive);
+                    player.sendSystemMessage(msg.withStyle(net.minecraft.ChatFormatting.LIGHT_PURPLE));
                 }
             }
-        }else {
+        } else {
             EndersJourney.LOGGER.debug("Not found item");
         }
     }
