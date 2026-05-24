@@ -100,11 +100,11 @@ public class PortalBlock extends NetherPortalBlock {
 
                         Entity teleported = repositionEntity.apply(false);
 
-                        BlockPos platform = new BlockPos(-8, 51, -13);
+                        BlockPos platform = new BlockPos(100, 67, -1);
 
                         destWorld.getChunk(platform);
 
-                        Vec3 tp = Vec3.atCenterOf(platform.above());
+                        Vec3 tp = Vec3.atCenterOf(platform);
 
                         teleported.teleportTo(tp.x, tp.y, tp.z);
 
