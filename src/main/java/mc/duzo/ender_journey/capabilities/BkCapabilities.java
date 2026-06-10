@@ -15,9 +15,24 @@ import net.minecraftforge.fml.common.Mod;
 public class BkCapabilities {
     public static final Capability<PortalPlayer> PORTAL_PLAYER_CAPABILITY = CapabilityManager.get(new CapabilityToken<>() { });
 
+    public static final Capability<IZoneChunkCapability> CHUNK_CAPABILITY = CapabilityManager.get(new CapabilityToken<>() { });
+
     @SubscribeEvent
     public static void register(RegisterCapabilitiesEvent event) {
         event.register(PortalPlayer.class);
+        event.register(IZoneChunkCapability.class);
+    }
+    @SuppressWarnings("unchecked")
+    public static <T extends IZoneChunkCapability> T getWorldCapability(Level level, Class<T> type) {
+        if (level != null) {
+            IZoneChunkCapability entitypatch = level.getCapability(BkCapabilities.CHUNK_CAPABILITY).orElse(null);
+
+            if (entitypatch != null && type.isAssignableFrom(entitypatch.getClass())) {
+                return (T)entitypatch;
+            }
+        }
+
+        return null;
     }
     @SuppressWarnings("unchecked")
     public static <T extends PortalPlayer> T getEntityPatch(Entity entity, Class<T> type) {
@@ -30,14 +45,5 @@ public class BkCapabilities {
         }
 
         return null;
-    }
-
-    @Mod.EventBusSubscriber(modid = EndersJourney.MODID)
-    public static class Registration {
-
-        @SubscribeEvent
-        public static void attachWorldCapabilities(AttachCapabilitiesEvent<Level> event) {
-
-        }
     }
 }

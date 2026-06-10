@@ -2,6 +2,7 @@ package mc.duzo.ender_journey;
 
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
+import net.minecraft.core.Vec3i;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.Blocks;
@@ -18,6 +19,7 @@ public class CommonProxy {
 
     }
     public static void initBlocks(){
+<<<<<<< HEAD
 
         // ===== EXTRA BLOCKS =====
         add("minecraft:air", 35,131,-10);
@@ -26,6 +28,171 @@ public class CommonProxy {
         add("minecraft:cyan_terracotta", 34,129,10);
         add("minecraft:cyan_terracotta", 33,129,-10);
         add("minecraft:cyan_terracotta", 33,128,-10);
+=======
+        Events.queue.add(List.of(
+                new Vec3i(1,0,0),
+                new Vec3i(-1,0,0),
+                new Vec3i(0,0,1),
+                new Vec3i(0,0,-1)
+        ));
+
+        Events.queue.add(List.of(
+                new Vec3i(1,0,1),
+                new Vec3i(-1,0,1),
+                new Vec3i(1,0,-1),
+                new Vec3i(-1,0,-1)
+        ));
+
+        Events.queue.add(List.of(
+                new Vec3i(2,0,0),
+                new Vec3i(-2,0,0),
+                new Vec3i(0,0,2),
+                new Vec3i(0,0,-2)
+        ));
+
+        Events.queue.add(List.of(
+                new Vec3i(2,0,-1),
+                new Vec3i(-2,0,1),
+                new Vec3i(2,0,1),
+                new Vec3i(-2,0,-1)
+        ));
+
+        Events.queue.add(List.of(
+                new Vec3i(1,0,-2),
+                new Vec3i(-1,0,2),
+                new Vec3i(1,0,2),
+                new Vec3i(-1,0,-2)
+        ));
+
+        Events.queue.add(List.of(
+                new Vec3i(2,0,2),
+                new Vec3i(-2,0,2),
+                new Vec3i(2,0,-2),
+                new Vec3i(-2,0,-2)
+        ));
+
+        Events.queue.add(List.of(
+                new Vec3i(3,0,0),
+                new Vec3i(-3,0,0),
+                new Vec3i(0,0,3),
+                new Vec3i(0,0,-3)
+        ));
+
+        Events.queue.add(List.of(
+                new Vec3i(3,0,-1),
+                new Vec3i(-3,0,1),
+                new Vec3i(3,0,1),
+                new Vec3i(-3,0,-1)
+        ));
+
+        Events.queue.add(List.of(
+                new Vec3i(1,0,3),
+                new Vec3i(-1,0,3),
+                new Vec3i(1,0,-3),
+                new Vec3i(-1,0,-3)
+        ));
+
+        Events.queue.add(List.of(
+                new Vec3i(3,0,-2),
+                new Vec3i(-3,0,2),
+                new Vec3i(3,0,2),
+                new Vec3i(-3,0,-2)
+        ));
+
+        Events.queue.add(List.of(
+                new Vec3i(2,0,3),
+                new Vec3i(-2,0,3),
+                new Vec3i(2,0,-3),
+                new Vec3i(-2,0,-3)
+        ));
+
+        Events.queue.add(List.of(
+                new Vec3i(4,0,0),
+                new Vec3i(-4,0,0),
+                new Vec3i(0,0,4),
+                new Vec3i(0,0,-4)
+        ));
+
+        Events.queue.add(List.of(
+                new Vec3i(4,0,-1),
+                new Vec3i(-4,0,1),
+                new Vec3i(4,0,1),
+                new Vec3i(-4,0,-1)
+        ));
+
+        Events.queue.add(List.of(
+                new Vec3i(1,0,4),
+                new Vec3i(-1,0,4),
+                new Vec3i(1,0,-4),
+                new Vec3i(-1,0,-4)
+        ));
+
+        Events.queue.add(List.of(
+                new Vec3i(3,0,3),
+                new Vec3i(-3,0,3),
+                new Vec3i(3,0,-3),
+                new Vec3i(-3,0,-3)
+        ));
+
+        Events.queue.add(List.of(
+                new Vec3i(4,0,-2),
+                new Vec3i(-4,0,2),
+                new Vec3i(4,0,2),
+                new Vec3i(-4,0,-2)
+        ));
+
+        Events.queue.add(List.of(
+                new Vec3i(2,0,4),
+                new Vec3i(-2,0,4),
+                new Vec3i(2,0,-4),
+                new Vec3i(-2,0,-4)
+        ));
+
+        Events.queue.add(List.of(
+                new Vec3i(5,0,0),
+                new Vec3i(-5,0,0),
+                new Vec3i(4,0,3),
+                new Vec3i(-4,0,3)
+        ));
+
+        Events.queue.add(List.of(
+                new Vec3i(3,0,4),
+                new Vec3i(-3,0,4),
+                new Vec3i(4,0,-3),
+                new Vec3i(-4,0,-3)
+        ));
+
+        Events.queue.add(List.of(
+                new Vec3i(3,0,-4),
+                new Vec3i(-3,0,-4),
+                new Vec3i(0,0,5),
+                new Vec3i(0,0,-5)
+        ));
+
+        Events.queue.add(List.of(
+                new Vec3i(5,0,-1),
+                new Vec3i(-5,0,-1),
+                new Vec3i(5,0,1),
+                new Vec3i(-5,0,1)
+        ));
+
+        Events.queue.add(List.of(
+                new Vec3i(1,0,-5),
+                new Vec3i(-1,0,5),
+                new Vec3i(1,0,5),
+                new Vec3i(-1,0,-5)
+        ));
+
+        Events.queue.add(List.of(
+                new Vec3i(5,0,2),
+                new Vec3i(-5,0,2),
+                new Vec3i(5,0,-2),
+                new Vec3i(-5,0,-2)
+        ));
+
+        Events.queue.add(List.of(new Vec3i(2,0,-5), new Vec3i(-2,0,5), new Vec3i(2,0,5), new Vec3i(-2,0,-5)));
+
+>>>>>>> 8bdbea2 (cambio en la generacion de estructura.)
 
         add("paraglider:rito_goddess_statue", -10,130,34, Direction.EAST);
         add("paraglider:rito_goddess_statue", 11,130,34, Direction.WEST);
@@ -65,6 +232,11 @@ public class CommonProxy {
         add("twilightforest:firefly_particle_spawner", -22,127,-12);
 
         add("minecraft:air",68,77,46);
+        for (int x = -8; x < 8 ; x ++){
+            for(int z = -8; z < 8 ; z ++){
+                add("beyondtheend:glowing_energy_rock",5000+x,125,8+z);
+            }
+        }
     }
 
     private static void add(String id, int x, int y, int z) {

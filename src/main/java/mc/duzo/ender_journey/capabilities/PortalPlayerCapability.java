@@ -1,8 +1,12 @@
 package mc.duzo.ender_journey.capabilities;
 
+import com.TBK.beyondtheend.common.registry.BkCommonRegistry;
+import com.google.common.collect.Queues;
+import com.mojang.math.Vector3d;
 import mc.duzo.ender_journey.EndersJourney;
 import mc.duzo.ender_journey.common.DimensionUtil;
 import mc.duzo.ender_journey.common.block_entity.ColumnBlockEntity;
+import mc.duzo.ender_journey.common.register.BKBlocks;
 import mc.duzo.ender_journey.mixin.common.AdvancementsProgressAccessor;
 import mc.duzo.ender_journey.network.PacketHandler;
 import mc.duzo.ender_journey.network.message.PacketCloneSync;
@@ -14,6 +18,7 @@ import net.minecraft.client.gui.screens.inventory.AbstractContainerScreen;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
 import net.minecraft.core.Holder;
+import net.minecraft.core.Vec3i;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.nbt.ListTag;
 import net.minecraft.resources.ResourceLocation;
@@ -26,6 +31,7 @@ import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.Items;
 import net.minecraft.world.level.Level;
+import net.minecraft.world.phys.Vec3;
 import net.minecraftforge.common.capabilities.Capability;
 import net.minecraftforge.common.capabilities.ICapabilityProvider;
 import net.minecraftforge.common.capabilities.ICapabilitySerializable;
@@ -38,6 +44,7 @@ import org.jetbrains.annotations.Nullable;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+import java.util.Queue;
 
 public class PortalPlayerCapability implements PortalPlayer{
     Player player;
@@ -80,9 +87,11 @@ public class PortalPlayerCapability implements PortalPlayer{
             PacketHandler.sendToPlayer(new PacketCloneSync(this.eyesEarns), (ServerPlayer) player);
         }
     }
+
     public void sync() {
         PacketHandler.sendToPlayer(new PacketSync(this.eyesEarn,this.visitTwilightForest()), (ServerPlayer) player);
     }
+
     @Override
     public void plusEye(ResourceLocation location) {
         if(this.eyesEarn++>24){
@@ -109,10 +118,10 @@ public class PortalPlayerCapability implements PortalPlayer{
 
             }
 
+
             PacketHandler.sendToPlayer(new PacketSync(this.eyesEarn,this.visitTwilightForest()), (ServerPlayer) player);
         }
         this.addEye(location);
-
     }
 
     @Override
@@ -166,7 +175,15 @@ public class PortalPlayerCapability implements PortalPlayer{
 
     @Override
     public void onUpdate() {
-        this.handleAetherPortal();
+
+        if (this.player.getY()<0 && player.level.dimension() == EnderDimensions.REALM_KEY){
+            int chunkX = player.chunkPosition().x;
+            int chunkZ = player.chunkPosition().z;
+            if (chunkX > 300 && chunkX < 320 && chunkZ < 10 && chunkZ > -10){
+                this.player.teleportTo(5000,152,8);
+            }
+
+        }
     }
 
     @Override
@@ -336,6 +353,23 @@ public class PortalPlayerCapability implements PortalPlayer{
             }
         }
     }
+    public static boolean isChunkUnlocked(Player player, int indexX,int indexZ){
+        IZoneChunkCapability cap = BkCapabilities.getWorldCapability(player.level, IZoneChunkCapability.class);
+        if (cap != null){
+
+            return cap.unlockChunk(indexX,indexZ);
+        }
+
+        return false;
+    }
+    public static void createChunkGlowing(ServerLevel level,int x,int y,int z){
+        for (int x1 = -8 ; x1 < 8 ; x1++){
+            for (int z1 = -8 ; z1 < 8 ; z1++){
+                level.setBlock(new BlockPos(x+x1,y,z+z1), BkCommonRegistry.GLOWING_ENERGY_ROCK.get().defaultBlockState(),3);
+            }
+        }
+    }
+
 
     public static class PortalPlayerProvider implements ICapabilityProvider, ICapabilitySerializable<CompoundTag> {
         private final LazyOptional<PortalPlayer> instance=LazyOptional.of(PortalPlayerCapability::new);

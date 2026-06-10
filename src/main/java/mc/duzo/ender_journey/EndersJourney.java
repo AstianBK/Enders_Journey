@@ -2,6 +2,7 @@ package mc.duzo.ender_journey;
 
 import com.mojang.logging.LogUtils;
 import com.mojang.math.Vector3d;
+import mc.duzo.ender_journey.capabilities.PortalPlayerCapability;
 import mc.duzo.ender_journey.client.ClientProxy;
 import mc.duzo.ender_journey.common.register.BKBlockEntity;
 import mc.duzo.ender_journey.common.register.BKBlocks;
@@ -11,11 +12,15 @@ import mc.duzo.ender_journey.network.PacketHandler;
 import mc.duzo.ender_journey.realm.RealmManager;
 import mc.duzo.ender_journey.sound.EnderSounds;
 import net.minecraft.core.BlockPos;
+import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.MinecraftServer;
+import net.minecraft.server.level.ServerPlayer;
+import net.minecraft.world.level.ChunkPos;
 import net.minecraftforge.common.MinecraftForge;
 import net.minecraftforge.event.TickEvent;
 import net.minecraftforge.event.entity.living.LivingSpawnEvent;
 import net.minecraftforge.event.entity.player.PlayerEvent;
+import net.minecraftforge.event.level.BlockEvent;
 import net.minecraftforge.eventbus.api.Event;
 import net.minecraftforge.eventbus.api.IEventBus;
 import net.minecraftforge.eventbus.api.SubscribeEvent;
@@ -91,6 +96,35 @@ public class EndersJourney {
             event.setResult(Event.Result.DENY);
         }
     }
+    @SubscribeEvent
+    public void onBlockPlace(BlockEvent.EntityPlaceEvent event) {
+
+        if (!(event.getEntity() instanceof ServerPlayer player))
+            return;
+
+        if (!player.level.dimension().location().equals(new ResourceLocation("ender_journey", "the_forgotten_realm")))
+            return;
+
+        ChunkPos chunk = new ChunkPos(event.getPos());
+
+        if (!PortalPlayerCapability.isChunkUnlocked(player, chunk.x,chunk.z)) {
+            event.setCanceled(true);
+        }
+    }
+    @SubscribeEvent
+    public void onBlockBreak(BlockEvent.BreakEvent event) {
+        if (event.getLevel().isClientSide()){
+            return;
+        }
+        ServerPlayer player = (ServerPlayer) event.getPlayer();
+
+        ChunkPos chunk = new ChunkPos(event.getPos());
+
+        if (!PortalPlayerCapability.isChunkUnlocked(player, chunk.x,chunk.z)) {
+            event.setCanceled(true);
+        }
+    }
+
 
     public static MinecraftServer getServer() {
         return ServerLifecycleHooks.getCurrentServer();

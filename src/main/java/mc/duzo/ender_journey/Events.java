@@ -1,11 +1,10 @@
 package mc.duzo.ender_journey;
 
+ import com.google.common.collect.Queues;
  import com.klikli_dev.occultism.registry.OccultismBlocks;
  import fr.shoqapik.btemobs.BteMobsMod;
- import mc.duzo.ender_journey.capabilities.BkCapabilities;
-import mc.duzo.ender_journey.capabilities.PortalPlayer;
-import mc.duzo.ender_journey.capabilities.PortalPlayerCapability;
-import mc.duzo.ender_journey.common.DimensionUtil;
+ import mc.duzo.ender_journey.capabilities.*;
+ import mc.duzo.ender_journey.common.DimensionUtil;
  import mc.duzo.ender_journey.common.blocks.PortalBlock;
  import mc.duzo.ender_journey.common.blocks.PortalNetherBlock;
  import mc.duzo.ender_journey.common.blocks.TheNewEndPortalBlock;
@@ -17,7 +16,8 @@ import mc.duzo.ender_journey.network.message.PacketUpdateChuck;
  import mc.duzo.ender_journey.world.dimension.EnderDimensions;
  import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
-import net.minecraft.resources.ResourceKey;
+ import net.minecraft.core.Vec3i;
+ import net.minecraft.resources.ResourceKey;
 import net.minecraft.resources.ResourceLocation;
  import net.minecraft.server.MinecraftServer;
  import net.minecraft.server.level.ServerLevel;
@@ -40,8 +40,13 @@ import net.minecraftforge.event.TickEvent;
 import net.minecraftforge.event.entity.EntityJoinLevelEvent;
 import net.minecraftforge.event.entity.EntityTravelToDimensionEvent;
 import net.minecraftforge.event.entity.living.LivingEvent;
+<<<<<<< HEAD
 import net.minecraftforge.event.entity.living.LivingFallEvent;
 import net.minecraftforge.event.entity.living.LivingSpawnEvent;
+=======
+ import net.minecraftforge.event.entity.living.LivingFallEvent;
+ import net.minecraftforge.event.entity.living.LivingSpawnEvent;
+>>>>>>> 8bdbea2 (cambio en la generacion de estructura.)
 import net.minecraftforge.event.entity.player.AdvancementEvent;
 import net.minecraftforge.event.entity.player.PlayerEvent;
 import net.minecraftforge.event.entity.player.PlayerInteractEvent;
@@ -56,10 +61,12 @@ import net.minecraftforge.fml.common.Mod;
 import net.minecraftforge.registries.ForgeRegistries;
 
 import java.util.ArrayList;
+ import java.util.List;
+ import java.util.Queue;
 
 @Mod.EventBusSubscriber(modid = EndersJourney.MODID)
 public class Events {
-
+    public static Queue<List<Vec3i>> queue = Queues.newArrayDeque();
     @SubscribeEvent
     public static void onPlayerLoginDimension(PlayerEvent.PlayerLoggedInEvent event) {
         Player player = event.getEntity();
@@ -108,6 +115,13 @@ public class Events {
                     ServerLevel level=EndersJourney.getServer().getLevel(EnderDimensions.REALM_KEY);
                     if(level!=null){
                         placeOrReloadStorage(level,portalPlayer.getEyesEarn());
+                        List<Vec3i> offsets = queue.poll();
+                        if (offsets!=null){
+                            for (Vec3i pos : offsets){
+                                PortalPlayerCapability.createChunkGlowing(level,pos.getX()*16+5000,125,pos.getZ()*16+8);
+                                BkCapabilities.getWorldCapability(level,IZoneChunkCapability.class).addChunk(312+pos.getX(),pos.getZ());
+                            }
+                        }
                         if (eyes==8){
                             for (BlockPos pos : BlockPos.betweenClosed(-31,84,-4,-31,94,3)){
                                 if(level.isEmptyBlock(pos) || level.getBlockState(pos).is(BKBlocks.PORTAL_NETHER.get())){
@@ -229,6 +243,19 @@ public class Events {
                     event.addCapability(new ResourceLocation(EndersJourney.MODID,"portal"),prov);
                 }
             }
+        }
+    }
+
+    @SubscribeEvent
+    public static void attachCapability(AttachCapabilitiesEvent<Level> event){
+        EndersJourney.LOGGER.info("register");
+        ImagineZoneChunkCapability oldCap = BkCapabilities.getWorldCapability(event.getObject(), ImagineZoneChunkCapability.class);
+        if(oldCap==null){
+            EndersJourney.LOGGER.info("register old");
+            ImagineZoneChunkCapability.ImagineZoneChunkProvider prov=new ImagineZoneChunkCapability.ImagineZoneChunkProvider();
+            IZoneChunkCapability cap = prov.getCapability(BkCapabilities.CHUNK_CAPABILITY,null).orElse(null);
+
+            event.addCapability(new ResourceLocation(EndersJourney.MODID,"chunks"),prov);
         }
     }
 
