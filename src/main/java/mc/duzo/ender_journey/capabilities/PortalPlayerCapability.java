@@ -175,11 +175,11 @@ public class PortalPlayerCapability implements PortalPlayer{
 
     @Override
     public void onUpdate() {
-
         if (this.player.getY()<0 && player.level.dimension() == EnderDimensions.REALM_KEY){
             int chunkX = player.chunkPosition().x;
             int chunkZ = player.chunkPosition().z;
             if (chunkX > 300 && chunkX < 320 && chunkZ < 10 && chunkZ > -10){
+                this.player.fallDistance = 0.0F;
                 this.player.teleportTo(5000,152,8);
             }
 

@@ -234,7 +234,7 @@ public class CommonProxy {
         add("minecraft:air",68,77,46);
         for (int x = -8; x < 8 ; x ++){
             for(int z = -8; z < 8 ; z ++){
-                add("beyondtheend:glowing_energy_rock",5000+x,125,8+z);
+                add("beyondtheend:glowing_energy_rock",5000+x,150,8+z);
             }
         }
     }

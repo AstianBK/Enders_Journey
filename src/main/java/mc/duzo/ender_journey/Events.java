@@ -118,7 +118,7 @@ public class Events {
                         List<Vec3i> offsets = queue.poll();
                         if (offsets!=null){
                             for (Vec3i pos : offsets){
-                                PortalPlayerCapability.createChunkGlowing(level,pos.getX()*16+5000,125,pos.getZ()*16+8);
+                                PortalPlayerCapability.createChunkGlowing(level,pos.getX()*16+5000,150,pos.getZ()*16+8);
                                 BkCapabilities.getWorldCapability(level,IZoneChunkCapability.class).addChunk(312+pos.getX(),pos.getZ());
                             }
                         }
@@ -248,10 +248,9 @@ public class Events {
 
     @SubscribeEvent
     public static void attachCapability(AttachCapabilitiesEvent<Level> event){
-        EndersJourney.LOGGER.info("register");
         ImagineZoneChunkCapability oldCap = BkCapabilities.getWorldCapability(event.getObject(), ImagineZoneChunkCapability.class);
         if(oldCap==null){
-            EndersJourney.LOGGER.info("register old");
+
             ImagineZoneChunkCapability.ImagineZoneChunkProvider prov=new ImagineZoneChunkCapability.ImagineZoneChunkProvider();
             IZoneChunkCapability cap = prov.getCapability(BkCapabilities.CHUNK_CAPABILITY,null).orElse(null);
 
