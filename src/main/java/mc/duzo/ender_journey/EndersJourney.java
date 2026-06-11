@@ -105,22 +105,33 @@ public class EndersJourney {
         if (!player.level.dimension().location().equals(new ResourceLocation("ender_journey", "the_forgotten_realm")))
             return;
 
-        ChunkPos chunk = new ChunkPos(event.getPos());
+        BlockPos pos = event.getPos();
+        if (pos.getX() * pos.getX() + pos.getZ() * pos.getZ() > 500 * 500)
+            return;
 
-        if (!PortalPlayerCapability.isChunkUnlocked(player, chunk.x,chunk.z)) {
+        ChunkPos chunk = new ChunkPos(pos);
+
+        if (!PortalPlayerCapability.isChunkUnlocked(player, chunk.x, chunk.z)) {
             event.setCanceled(true);
         }
     }
     @SubscribeEvent
     public void onBlockBreak(BlockEvent.BreakEvent event) {
-        if (event.getLevel().isClientSide()){
+        if (event.getLevel().isClientSide()) {
             return;
         }
         ServerPlayer player = (ServerPlayer) event.getPlayer();
 
-        ChunkPos chunk = new ChunkPos(event.getPos());
+        if (!player.level.dimension().location().equals(new ResourceLocation("ender_journey", "the_forgotten_realm")))
+            return;
 
-        if (!PortalPlayerCapability.isChunkUnlocked(player, chunk.x,chunk.z)) {
+        BlockPos pos = event.getPos();
+        if (pos.getX() * pos.getX() + pos.getZ() * pos.getZ() > 500 * 500)
+            return;
+
+        ChunkPos chunk = new ChunkPos(pos);
+
+        if (!PortalPlayerCapability.isChunkUnlocked(player, chunk.x, chunk.z)) {
             event.setCanceled(true);
         }
     }

@@ -19,16 +19,7 @@ public class CommonProxy {
 
     }
     public static void initBlocks(){
-<<<<<<< HEAD
 
-        // ===== EXTRA BLOCKS =====
-        add("minecraft:air", 35,131,-10);
-        add("minecraft:air", 35,132,-10);
-        add("minecraft:air", 10,129,35);
-        add("minecraft:cyan_terracotta", 34,129,10);
-        add("minecraft:cyan_terracotta", 33,129,-10);
-        add("minecraft:cyan_terracotta", 33,128,-10);
-=======
         Events.queue.add(List.of(
                 new Vec3i(1,0,0),
                 new Vec3i(-1,0,0),
@@ -192,7 +183,13 @@ public class CommonProxy {
 
         Events.queue.add(List.of(new Vec3i(2,0,-5), new Vec3i(-2,0,5), new Vec3i(2,0,5), new Vec3i(-2,0,-5)));
 
->>>>>>> 8bdbea2 (cambio en la generacion de estructura.)
+        // ===== EXTRA BLOCKS =====
+        add("minecraft:air", 35,131,-10);
+        add("minecraft:air", 35,132,-10);
+        add("minecraft:air", 10,129,35);
+        add("minecraft:cyan_terracotta", 34,129,10);
+        add("minecraft:cyan_terracotta", 33,129,-10);
+        add("minecraft:cyan_terracotta", 33,128,-10);
 
         add("paraglider:rito_goddess_statue", -10,130,34, Direction.EAST);
         add("paraglider:rito_goddess_statue", 11,130,34, Direction.WEST);

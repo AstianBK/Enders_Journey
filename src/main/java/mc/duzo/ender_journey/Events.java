@@ -40,13 +40,8 @@ import net.minecraftforge.event.TickEvent;
 import net.minecraftforge.event.entity.EntityJoinLevelEvent;
 import net.minecraftforge.event.entity.EntityTravelToDimensionEvent;
 import net.minecraftforge.event.entity.living.LivingEvent;
-<<<<<<< HEAD
 import net.minecraftforge.event.entity.living.LivingFallEvent;
 import net.minecraftforge.event.entity.living.LivingSpawnEvent;
-=======
- import net.minecraftforge.event.entity.living.LivingFallEvent;
- import net.minecraftforge.event.entity.living.LivingSpawnEvent;
->>>>>>> 8bdbea2 (cambio en la generacion de estructura.)
 import net.minecraftforge.event.entity.player.AdvancementEvent;
 import net.minecraftforge.event.entity.player.PlayerEvent;
 import net.minecraftforge.event.entity.player.PlayerInteractEvent;
