@@ -9,6 +9,7 @@ package mc.duzo.ender_journey;
  import mc.duzo.ender_journey.common.blocks.PortalNetherBlock;
  import mc.duzo.ender_journey.common.blocks.TheNewEndPortalBlock;
  import mc.duzo.ender_journey.common.register.BKBlocks;
+ import mc.duzo.ender_journey.event.EnderEyeMilestoneEvent;
  import mc.duzo.ender_journey.mixin.common.AdvancementsProgressAccessor;
 import mc.duzo.ender_journey.network.PacketHandler;
 import mc.duzo.ender_journey.network.message.PacketSync;
@@ -51,6 +52,7 @@ import net.minecraftforge.event.level.LevelEvent;
 import net.minecraftforge.event.level.SleepFinishedTimeEvent;
 import net.minecraftforge.eventbus.api.Event;
 import net.minecraftforge.eventbus.api.SubscribeEvent;
+import net.minecraftforge.common.MinecraftForge;
 import net.minecraftforge.fml.LogicalSide;
 import net.minecraftforge.fml.common.Mod;
 import net.minecraftforge.registries.ForgeRegistries;
@@ -62,6 +64,8 @@ import java.util.ArrayList;
 @Mod.EventBusSubscriber(modid = EndersJourney.MODID)
 public class Events {
     public static Queue<List<Vec3i>> queue = Queues.newArrayDeque();
+    /** Total de chunks ya desbloqueados en la Home Dimension vía Ender Eyes. */
+    public static int totalChunksUnlocked = 0;
     @SubscribeEvent
     public static void onPlayerLoginDimension(PlayerEvent.PlayerLoggedInEvent event) {
         Player player = event.getEntity();
@@ -101,17 +105,26 @@ public class Events {
                 if(!portalPlayer.getList().contains(event.getAdvancement().getId())){
                     portalPlayer.plusEye(event.getAdvancement().getId());
                     int currentEyeIndex = portalPlayer.getEyesEarn();
+                    int[] heartsGivenToActingPlayer = {0};
                     event.getEntity().level.players().forEach(player -> {
                         PortalPlayer.get(player).ifPresent(portalPlayer1 -> {
-                            giveHeartContainer(player, currentEyeIndex);
+                            int given = giveHeartContainer(player, currentEyeIndex);
+                            if (player == event.getEntity()) {
+                                heartsGivenToActingPlayer[0] = given;
+                            }
                         });
                     });
                     int eyes = portalPlayer.getEyesEarn();
+                    boolean storageUpgraded = false;
+                    int chunksAdded = 0;
+                    EnderEyeMilestoneEvent.PortalOpened portalOpened = EnderEyeMilestoneEvent.PortalOpened.NONE;
                     ServerLevel level=EndersJourney.getServer().getLevel(EnderDimensions.REALM_KEY);
                     if(level!=null){
-                        placeOrReloadStorage(level,portalPlayer.getEyesEarn());
+                        storageUpgraded = placeOrReloadStorage(level,portalPlayer.getEyesEarn());
                         List<Vec3i> offsets = queue.poll();
                         if (offsets!=null){
+                            chunksAdded = offsets.size();
+                            totalChunksUnlocked += chunksAdded;
                             for (Vec3i pos : offsets){
                                 PortalPlayerCapability.createChunkGlowing(level,pos.getX()*16+5000,150,pos.getZ()*16+8);
                                 BkCapabilities.getWorldCapability(level,IZoneChunkCapability.class).addChunk(312+pos.getX(),pos.getZ());
@@ -123,34 +136,52 @@ public class Events {
                                     level.setBlock(pos, BKBlocks.PORTAL_NETHER.get().defaultBlockState().setValue(PortalNetherBlock.AXIS, Direction.Axis.Z).setValue(PortalNetherBlock.ENABLED,true),3);
                                 }
                             }
+                            portalOpened = EnderEyeMilestoneEvent.PortalOpened.NETHER;
                         }else if(eyes==16){
                             for (BlockPos pos : BlockPos.betweenClosed(-4,85,27,4,94,27)){
                                 if(level.isEmptyBlock(pos) || level.getBlockState(pos).is(BKBlocks.PORTAL.get())){
                                     level.setBlock(pos, BKBlocks.PORTAL.get().defaultBlockState().setValue(PortalBlock.ENABLED,true),3);
                                 }
                             }
+                            portalOpened = EnderEyeMilestoneEvent.PortalOpened.END;
                         }else if(eyes==24){
                             for(BlockPos pos : BlockPos.betweenClosed(new BlockPos(-9,51,-10),new BlockPos(9,51,10))){
                                 if(level.isEmptyBlock(pos) || level.getBlockState(pos).is(BKBlocks.THE_NEW_END_PORTAL.get())){
                                     level.setBlock(pos, BKBlocks.THE_NEW_END_PORTAL.get().defaultBlockState().setValue(TheNewEndPortalBlock.ENABLED,true),3);
                                 }
                             }
+                            portalOpened = EnderEyeMilestoneEvent.PortalOpened.FINAL;
                         }
+                    }
+
+                    if (event.getEntity() instanceof ServerPlayer serverPlayer) {
+                        MinecraftForge.EVENT_BUS.post(new EnderEyeMilestoneEvent(
+                                serverPlayer,
+                                event.getAdvancement().getId(),
+                                eyes,
+                                heartsGivenToActingPlayer[0],
+                                storageUpgraded,
+                                portalOpened,
+                                chunksAdded,
+                                totalChunksUnlocked
+                        ));
                     }
                 }
             });
         }
     }
 
-    private static void placeOrReloadStorage(Level level,int eyeEarn) {
+    private static boolean placeOrReloadStorage(Level level,int eyeEarn) {
         if(!level.isClientSide){
             BlockState prevState=level.getBlockState(new BlockPos(0 ,114, 31));
             BlockState state=getBlockStateForEye(eyeEarn);
             boolean flag=prevState.isAir() || newStateIsDowngrade(prevState,state);
             if(state!=null && flag){
                 level.setBlock(new BlockPos(0 ,114, 31),state.setValue(BlockStateProperties.FACING,Direction.DOWN),3);
+                return true;
             }
         }
+        return false;
     }
 
     private static boolean newStateIsDowngrade(BlockState prevState, BlockState state) {
@@ -196,11 +227,11 @@ public class Events {
         1, 1, 1, 1, 2, 2, 1, 0,   // ojos 17-24 → acumulado: 20 (ojo 24 queda sin corazón — opcional ajustar)
     };
 
-    private static void giveHeartContainer(Player player, int eyeIndex) {
-        if (eyeIndex < 1 || eyeIndex > HEARTS_PER_EYE.length) return;
+    private static int giveHeartContainer(Player player, int eyeIndex) {
+        if (eyeIndex < 1 || eyeIndex > HEARTS_PER_EYE.length) return 0;
 
         int heartsToGive = HEARTS_PER_EYE[eyeIndex - 1];
-        if (heartsToGive <= 0) return;
+        if (heartsToGive <= 0) return 0;
 
         Item heart = PortalPlayerCapability.getItem(new ResourceLocation("paraglider", "heart_container"));
         if (heart != null) {
@@ -212,18 +243,13 @@ public class Events {
                             player.spawnAtLocation(stack);
                         }
                     }
-                    // Mensaje al jugador (i18n)
-                    net.minecraft.network.chat.MutableComponent msg = heartsToGive == 1
-                        ? net.minecraft.network.chat.Component.translatable(
-                            "message.ender_journey.heart_container_single")
-                        : net.minecraft.network.chat.Component.translatable(
-                            "message.ender_journey.heart_container_multiple", heartsToGive);
-                    player.sendSystemMessage(msg.withStyle(net.minecraft.ChatFormatting.LIGHT_PURPLE));
+                    return heartsToGive;
                 }
             }
         } else {
             EndersJourney.LOGGER.debug("Not found item");
         }
+        return 0;
     }
 
     @SubscribeEvent
