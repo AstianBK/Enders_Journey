@@ -226,7 +226,8 @@ public class RealmManager implements Savable {
 				BlockPos finalPos = origin.offset(info.pos);
 				placed.add(new StructureTemplate.StructureBlockInfo(finalPos, info.state, info.nbt));
 			}
-			int batchSize = 500;
+
+			int batchSize = 1500;
 
 			for (int i = 0; i < placed.size(); i += batchSize) {
 				int start = i;
@@ -264,6 +265,7 @@ public class RealmManager implements Savable {
 			if (!this.isPlaced && !generating) {
 				CommonProxy.initBlocks();
 				this.place();
+
 			}
 		}
 
@@ -292,58 +294,6 @@ public class RealmManager implements Savable {
 			}
 		}
 
-		public void settingElevator(ServerLevel level){
-			ElevatorGroupCapability cap = ElevatorGroupCapability.get(level);
-			boolean isFirstConfig = true;
-
-			for (BlockPos pos : this.posElevators) {
-
-				ControllerBlockEntity controller = (ControllerBlockEntity) level.getBlockEntity(pos);
-				if (controller == null) continue;
-
-				cap.add(controller);
-
-				for (int i = 0; i < 2; i++) {
-					BlockPos relativePos = pos.offset(this.posElevator[i], 1, 1);
-					CustomRemoteControllerBlockEntity remote =
-							(CustomRemoteControllerBlockEntity) level.getBlockEntity(relativePos);
-
-					if (remote != null) {
-						remote.setCamoState(Blocks.BLACKSTONE.defaultBlockState());
-						remote.setValues(remote.getFacing(), pos, controller.getFacing());
-					}
-				}
-
-				for (int i = 0; i < 2; i++) {
-					BlockPos relativePos = pos.offset(this.posElevator[i] * 3, 1, isFirstConfig ? 9 : 10);
-					CustomRemoteControllerBlockEntity remote =
-							(CustomRemoteControllerBlockEntity) level.getBlockEntity(relativePos);
-
-					if (remote != null) {
-						remote.setCamoState(Blocks.BLACKSTONE.defaultBlockState());
-						remote.setValues(remote.getFacing(), pos, controller.getFacing());
-					}
-				}
-
-				if (isFirstConfig) {
-					ElevatorGroup data = cap.get(0, -38, controller.getFacing());
-					if (data != null) {
-						data.increaseCageDepthOffset();
-						data.setTargetSpeed(0.8F);
-
-						for (int i = 0; i < 4; i++) {
-							data.increaseCageDepth();
-							data.increaseCageWidth();
-						}
-
-						for (int j = 0; j < 3; j++) {
-							data.decreaseCageHeight();
-						}
-					}
-					isFirstConfig = false;
-				}
-			}
-		}
 
 		private void placeColumn(ServerLevel level) {
 			DimensionUtil.eyeItemForBlockPos.forEach((itemStack, pos) -> {
@@ -375,13 +325,13 @@ public class RealmManager implements Savable {
 			}
 		}
 		private void enqueueGeneration(ServerLevel level, long start) {
-			makeSuperiorIsland(level, start);
+			makeSpawn(level, start);
 			makeInitialIsland(level, start);
-			makeInitialRoom(level, start);
-			makePortals(level, start);
+//			makeInitialRoom(level, start);
+//			makePortals(level, start);
 
 
-			tasks.add(()->settingElevator(level));
+//			tasks.add(()->settingElevator(level));
 			placeColumn(level);
 
 			checkAndGeneratePlatform(level);
@@ -484,23 +434,19 @@ public class RealmManager implements Savable {
 			placeComponent( level, -11, 119, 0, new ResourceLocation(EndersJourney.MODID, "cartel_waystone"), settings);
 			placeComponent( level, 0, 119, 11, new ResourceLocation(EndersJourney.MODID, "cartel_ocultismo"), settings);
 		}
-
+		public void makeSpawn(ServerLevel level, long start) {
+			placeComponent( level, 0, 130, 0, new ResourceLocation(EndersJourney.MODID, "spawn"), new StructurePlaceSettings());
+		}
 
 		public void makeInitialIsland(ServerLevel level, long start) {
-			placeComponent( level, 10, -1, 0, new ResourceLocation(EndersJourney.MODID, "island_inferior"), new StructurePlaceSettings());
+			placeComponent( level, 4, -1, -8, new ResourceLocation(EndersJourney.MODID, "island"), new StructurePlaceSettings());
 		}
 
 		public void makeInitialRoom(ServerLevel level, long start) {
 			placeComponent( level, -4, 48, -4, new ResourceLocation(EndersJourney.MODID, "island_center"), new StructurePlaceSettings());
 		}
 
-		public void makePortals(ServerLevel level, long start) {
-			placeComponent( level, -7, 78, 3, new ResourceLocation(EndersJourney.MODID, "island_superior"), new StructurePlaceSettings());
-		}
 
-		public void makeSuperiorIsland(ServerLevel level, long start) {
-			placeComponentFull( level, 5, 111, -3, new ResourceLocation(EndersJourney.MODID, "temple"), new StructurePlaceSettings());
-		}
 
 		public BlockPos getCentre() {
 			this.verify();

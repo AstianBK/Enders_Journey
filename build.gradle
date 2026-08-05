@@ -157,6 +157,10 @@ dependencies {
     implementation fg.deobf('software.bernie.geckolib:geckolib-forge-1.19:3.1.40')
     implementation fg.deobf("curse.maven:the-twilight-forest-227639:4389567")
     implementation fg.deobf("curse.maven:paragliders-289240:4478230")
+    implementation fg.deobf("curse.maven:simpleteleportersreloaded-893534:5423663")
+    implementation fg.deobf("curse.maven:artancoremod-585454:5646912")
+    implementation fg.deobf("curse.maven:openblocks-elevator-250832:4859577")
+    implementation fg.deobf("curse.maven:toms-storage-378609:5424070")
     annotationProcessor 'org.spongepowered:mixin:0.8.5:processor'
 }
 
