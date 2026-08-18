@@ -26,6 +26,7 @@ import net.minecraft.world.InteractionHand;
 import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.entity.Mob;
+import net.minecraft.world.effect.MobEffect;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
@@ -99,9 +100,13 @@ public class Events {
                 portalPlayer.sync();
             });
         }
-        if(DimensionUtil.eyesLocation.contains(event.getAdvancement().getId())){
+        boolean isEyeAdvancement = DimensionUtil.eyesLocation.contains(event.getAdvancement().getId());
+        EndersJourney.LOGGER.info("[ENDERJOURNEY-DEBUG] Advancement earned: {} | isEyeAdvancement={}", event.getAdvancement().getId(), isEyeAdvancement);
+        if(isEyeAdvancement){
             PortalPlayer.get(event.getEntity()).ifPresent(portalPlayer -> {
-                if(!portalPlayer.getList().contains(event.getAdvancement().getId())){
+                boolean alreadyCounted = portalPlayer.getList().contains(event.getAdvancement().getId());
+                EndersJourney.LOGGER.info("[ENDERJOURNEY-DEBUG] alreadyCounted={}, currentEyesEarn={}, list={}", alreadyCounted, portalPlayer.getEyesEarn(), portalPlayer.getList());
+                if(!alreadyCounted){
                     portalPlayer.plusEye(event.getAdvancement().getId());
                     int currentEyeIndex = portalPlayer.getEyesEarn();
                     event.getEntity().level.players().forEach(player -> {
@@ -111,12 +116,14 @@ public class Events {
                     });
                     int eyes = portalPlayer.getEyesEarn();
                     ServerLevel level=EndersJourney.getServer().getLevel(EnderDimensions.REALM_KEY);
+                    EndersJourney.LOGGER.info("[ENDERJOURNEY-DEBUG] eyes now={}, level!=null={}, queue.size() before poll={}", eyes, level!=null, queue.size());
                     if(level!=null){
                         placeOrReloadStorage(level,portalPlayer.getEyesEarn());
                         List<Vec3i> offsets = queue.poll();
+                        EndersJourney.LOGGER.info("[ENDERJOURNEY-DEBUG] queue.poll() returned: {}", offsets);
                         if (offsets!=null){
                             for (Vec3i pos : offsets){
-                                PortalPlayerCapability.createChunkGlowing(level,pos.getX()*16+5000,150,pos.getZ()*16+8);
+                                PortalPlayerCapability.createChunkGlowing(level,pos.getX()*16+5000,0,pos.getZ()*16+8);
                                 BkCapabilities.getWorldCapability(level,IZoneChunkCapability.class).addChunk(312+pos.getX(),pos.getZ());
                             }
                         }
@@ -127,10 +134,8 @@ public class Events {
                                 }
                             }
                         }else if(eyes==16){
-                            for (BlockPos pos : BlockPos.betweenClosed(-4,85,27,4,94,27)){
-                                if(level.isEmptyBlock(pos) || level.getBlockState(pos).is(BKBlocks.PORTAL.get())){
-                                    level.setBlock(pos, BKBlocks.PORTAL.get().defaultBlockState().setValue(PortalBlock.ENABLED,true),3);
-                                }
+                            for (BlockPos pos : BlockPos.betweenClosed(26,85,-4,26,94,4)){
+                                level.setBlock(pos, BKBlocks.PORTAL.get().defaultBlockState().setValue(PortalBlock.AXIS, Direction.Axis.Z).setValue(PortalBlock.ENABLED,true),3);
                             }
                         }else if(eyes==24){
                             for(BlockPos pos : BlockPos.betweenClosed(new BlockPos(-9,51,-10),new BlockPos(9,51,10))){
@@ -279,6 +284,88 @@ public class Events {
         FluidState fluidState = level.getFluidState(blockPos);
         if (DimensionUtil.detectWaterInFrame(level, blockPos, blockState, fluidState)) {
             event.setCanceled(true);
+        }
+    }
+
+
+    // "Central island" = within 1000 blocks (horizontal, X/Z) of the world origin.
+    private static final double CENTRAL_ISLAND_RADIUS_SQ = 1000.0 * 1000.0;
+
+    private static boolean isWithinCentralIsland(BlockPos pos) {
+        double distSq = (double) pos.getX() * pos.getX() + (double) pos.getZ() * pos.getZ();
+        return distSq <= CENTRAL_ISLAND_RADIUS_SQ;
+    }
+
+    private static MobEffect sacredPlaceEffectCache;
+    private static boolean sacredPlaceEffectLookedUp = false;
+
+    private static MobEffect getSacredPlaceEffect() {
+        if (!sacredPlaceEffectLookedUp) {
+            sacredPlaceEffectLookedUp = true;
+            sacredPlaceEffectCache = ForgeRegistries.MOB_EFFECTS.getValue(new ResourceLocation("protectyourstructures", "sacred_place"));
+        }
+        return sacredPlaceEffectCache;
+    }
+
+    @SubscribeEvent(priority = net.minecraftforge.eventbus.api.EventPriority.LOWEST)
+    public static void onPlayerTickRealmProtection(TickEvent.PlayerTickEvent event) {
+        if (event.side != LogicalSide.SERVER || event.phase != TickEvent.Phase.END) return;
+        if (!(event.player instanceof ServerPlayer serverPlayer)) return;
+        if (!serverPlayer.getLevel().dimension().equals(EnderDimensions.REALM_KEY)) return;
+
+        MobEffect sacredPlace = getSacredPlaceEffect();
+        if (sacredPlace == null) return;
+
+        BlockPos pos = serverPlayer.blockPosition();
+        boolean withinCentralIsland = isWithinCentralIsland(pos);
+
+        if (withinCentralIsland) {
+            if (serverPlayer.tickCount % 20 == 0) {
+                serverPlayer.addEffect(new net.minecraft.world.effect.MobEffectInstance(sacredPlace, 600, 0, false, false));
+            }
+        } else if (serverPlayer.hasEffect(sacredPlace)) {
+            serverPlayer.removeEffect(sacredPlace);
+            if (serverPlayer.tickCount % 20 == 0) {
+                EndersJourney.LOGGER.info("[ENDERJOURNEY-DEBUG] Removed sacred_place outside island (was re-applied by something else).");
+            }
+        }
+    }
+
+    // Home Zone (outside the central island radius): building is only allowed in chunks
+    // already unlocked via Ender Eyes (IZoneChunkCapability). The central island itself is
+    // handled separately by the protectyourstructures sacred_place effect above, so this
+    // is skipped there to avoid the two systems overlapping.
+    private static boolean isChunkLocked(ServerLevel level, BlockPos pos) {
+        boolean unlocked = BkCapabilities.getWorldCapability(level, IZoneChunkCapability.class).unlockChunk(pos.getX() >> 4, pos.getZ() >> 4);
+        return !unlocked;
+    }
+
+    @SubscribeEvent
+    public static void onBlockPlaceInRealm(BlockEvent.EntityPlaceEvent event) {
+        if (!(event.getEntity() instanceof Player player)) return;
+        if (player.isCreative() || player.isSpectator()) return;
+        if (!(event.getLevel() instanceof ServerLevel level)) return;
+        if (!level.dimension().equals(EnderDimensions.REALM_KEY)) return;
+        if (isWithinCentralIsland(event.getPos())) return;
+
+        if (isChunkLocked(level, event.getPos())) {
+            event.setCanceled(true);
+            player.displayClientMessage(net.minecraft.network.chat.Component.translatable("message.ender_journey.realm_build_locked"), true);
+        }
+    }
+
+    @SubscribeEvent
+    public static void onBlockBreakInRealm(BlockEvent.BreakEvent event) {
+        Player player = event.getPlayer();
+        if (player == null) return;
+        if (player.isCreative() || player.isSpectator()) return;
+        if (!(event.getLevel() instanceof ServerLevel level)) return;
+        if (!level.dimension().equals(EnderDimensions.REALM_KEY)) return;
+        if (isWithinCentralIsland(event.getPos())) return;
+
+        if (isChunkLocked(level, event.getPos())) {
+            event.setCanceled(true);
+            player.displayClientMessage(net.minecraft.network.chat.Component.translatable("message.ender_journey.realm_break_locked"), true);
         }
     }
 

@@ -1,4 +1,6 @@
 {
   "message.ender_journey.heart_container_single": "You have received a Heart Container",
-  "message.ender_journey.heart_container_multiple": "You have received %s Heart Containers"
+  "message.ender_journey.heart_container_multiple": "You have received %s Heart Containers",
+  "message.ender_journey.realm_build_locked": "You cannot build outside the unlocked zones.",
+  "message.ender_journey.realm_break_locked": "You cannot break blocks outside the unlocked zones."
 }

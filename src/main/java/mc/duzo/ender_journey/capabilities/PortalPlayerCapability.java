@@ -16,6 +16,8 @@ import mc.duzo.ender_journey.world.dimension.EnderDimensions;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.screens.inventory.AbstractContainerScreen;
 import net.minecraft.core.BlockPos;
+import net.minecraft.world.level.block.Blocks;
+import net.minecraft.world.level.chunk.ChunkStatus;
 import net.minecraft.core.Direction;
 import net.minecraft.core.Holder;
 import net.minecraft.core.Vec3i;
@@ -362,12 +364,31 @@ public class PortalPlayerCapability implements PortalPlayer{
 
         return false;
     }
+    private static net.minecraft.world.level.block.Block glowingEnergyBlockCache;
+    private static boolean glowingEnergyBlockLookedUp = false;
+
+    private static net.minecraft.world.level.block.Block getGlowingEnergyBlock() {
+        if (!glowingEnergyBlockLookedUp) {
+            glowingEnergyBlockLookedUp = true;
+            glowingEnergyBlockCache = net.minecraftforge.registries.ForgeRegistries.BLOCKS.getValue(new net.minecraft.resources.ResourceLocation("beyondtheend", "glowing_energy"));
+            mc.duzo.ender_journey.EndersJourney.LOGGER.info("[ENDERJOURNEY-DEBUG] getGlowingEnergyBlock() resolved beyondtheend:glowing_energy to: {}", glowingEnergyBlockCache);
+        }
+        return glowingEnergyBlockCache;
+    }
+
     public static void createChunkGlowing(ServerLevel level,int x,int y,int z){
+        level.getChunk(x >> 4, z >> 4, ChunkStatus.FULL, true);
+        net.minecraft.world.level.block.Block glowingEnergy = getGlowingEnergyBlock();
+        if (glowingEnergy == null) {
+            mc.duzo.ender_journey.EndersJourney.LOGGER.warn("[ENDERJOURNEY-DEBUG] beyondtheend:glowing_energy not found in registry, skipping createChunkGlowing at ({},{},{})", x, y, z);
+            return;
+        }
         for (int x1 = -8 ; x1 < 8 ; x1++){
             for (int z1 = -8 ; z1 < 8 ; z1++){
-                level.setBlock(new BlockPos(x+x1,y,z+z1), BkCommonRegistry.GLOWING_ENERGY_ROCK.get().defaultBlockState(),3);
+                level.setBlock(new BlockPos(x+x1,y,z+z1), glowingEnergy.defaultBlockState(),3);
             }
         }
+        mc.duzo.ender_journey.EndersJourney.LOGGER.info("[ENDERJOURNEY-DEBUG] createChunkGlowing readback at ({},{},{}): {}", x, y, z, level.getBlockState(new BlockPos(x,y,z)));
     }
 
 

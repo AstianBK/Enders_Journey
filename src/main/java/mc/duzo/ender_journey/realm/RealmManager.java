@@ -18,6 +18,7 @@ import mc.duzo.ender_journey.common.register.BKBlocks;
 import mc.duzo.ender_journey.data.Savable;
 import mc.duzo.ender_journey.world.dimension.EnderDimensions;
 import net.minecraft.core.BlockPos;
+import net.minecraft.world.level.chunk.ChunkStatus;
 import net.minecraft.core.Direction;
 import net.minecraft.core.Vec3i;
 import net.minecraft.nbt.CompoundTag;
@@ -106,6 +107,7 @@ public class RealmManager implements Savable {
 		private final ResourceLocation structure;
 		private boolean isPlaced;
 		private boolean plataformPlaced;
+		private boolean sessionColumnGenerated = false;
 		private BlockPos centre;
 		private Map<String, BlockPos> dimensionTp = new HashMap<>();
 
@@ -262,8 +264,24 @@ public class RealmManager implements Savable {
 		}
 
 		public void verify() {
+			CommonProxy.initBlocks();
+
+			if (!sessionColumnGenerated) {
+				ServerLevel level = getDimension();
+				if (level != null) {
+					sessionColumnGenerated = true;
+					EndersJourney.LOGGER.info("[ENDERJOURNEY-DEBUG] Running placeColumn/checkAndGeneratePlatform this session. CommonProxy.BLOCKS size={}", CommonProxy.BLOCKS.size());
+					try {
+						placeColumn(level);
+						checkAndGeneratePlatform(level);
+						EndersJourney.LOGGER.info("[ENDERJOURNEY-DEBUG] placeColumn/checkAndGeneratePlatform finished without errors.");
+					} catch (Throwable t) {
+						EndersJourney.LOGGER.error("[ENDERJOURNEY-DEBUG] Exception in placeColumn/checkAndGeneratePlatform", t);
+					}
+				}
+			}
+
 			if (!this.isPlaced && !generating) {
-				CommonProxy.initBlocks();
 				this.place();
 
 			}
@@ -294,9 +312,14 @@ public class RealmManager implements Savable {
 			}
 		}
 
+		private static void ensureChunkLoaded(ServerLevel level, BlockPos pos) {
+			level.getChunk(pos.getX() >> 4, pos.getZ() >> 4, ChunkStatus.FULL, true);
+		}
+
 
 		private void placeColumn(ServerLevel level) {
 			DimensionUtil.eyeItemForBlockPos.forEach((itemStack, pos) -> {
+				ensureChunkLoaded(level, pos);
 				ColumnBlockEntity block = new ColumnBlockEntity(pos, BKBlocks.COLUMN.get().defaultBlockState());
 				level.setBlock(pos, block.getBlockState(), 3);
 
@@ -306,6 +329,7 @@ public class RealmManager implements Savable {
 				}
 			});
 
+			ensureChunkLoaded(level, new BlockPos(0, 50, 0));
 			for (BlockPos pos : BlockPos.betweenClosed(new BlockPos(-9, 50, -10), new BlockPos(9, 50, 10))) {
 				level.setBlock(pos, Blocks.END_STONE_BRICKS.defaultBlockState(), 3);
 			}
@@ -313,6 +337,13 @@ public class RealmManager implements Savable {
 			for (BlockPos pos : BlockPos.betweenClosed(new BlockPos(-9, 51, -10), new BlockPos(9, 51, 10))) {
 				if (level.isEmptyBlock(pos)) {
 					level.setBlock(pos, BKBlocks.THE_NEW_END_PORTAL.get().defaultBlockState(), 3);
+				}
+			}
+
+			ensureChunkLoaded(level, new BlockPos(0, 89, 32));
+			for (BlockPos pos : BlockPos.betweenClosed(new BlockPos(-2, 87, 32), new BlockPos(2, 92, 32))) {
+				if (level.isEmptyBlock(pos)) {
+					level.setBlock(pos, BKBlocks.PORTAL_OVERWORLD.get().defaultBlockState(), 3);
 				}
 			}
 
@@ -349,8 +380,6 @@ public class RealmManager implements Savable {
 
 
 		public void checkAndGeneratePlatform(ServerLevel level) {
-			if (plataformPlaced) return;
-
 			if (!CommonProxy.BLOCKS.isEmpty()) {
 				for (CommonProxy.PlacedBlock placed : CommonProxy.BLOCKS) {
 					BlockState state = placed.block().defaultBlockState();
@@ -365,9 +394,13 @@ public class RealmManager implements Savable {
 						}
 					}
 
+					ensureChunkLoaded(level, placed.pos());
 					level.setBlock(placed.pos(), state, 3);
 				}
 				plataformPlaced = true;
+
+				BlockPos check = new BlockPos(5000, 0, 8);
+				EndersJourney.LOGGER.info("[ENDERJOURNEY-DEBUG] Readback immediately after placement at {}: {}", check, level.getBlockState(check));
 			}
 		}
 
@@ -399,7 +432,7 @@ public class RealmManager implements Savable {
 
 		public void spawnNpc5(ServerLevel level) {
 			Npc5Entity entity = new Npc5Entity(BteMobsEntities.NPC5_ENTITY.get(), level);
-			entity.setPos(0.5F, 80, 0.5F);
+			entity.setPos(0.5F, 80, -26.5F);
             entity.setYRot(Direction.NORTH.toYRot());
 			level.addFreshEntity(entity);
 			level.broadcastEntityEvent(entity,(byte) 5);
