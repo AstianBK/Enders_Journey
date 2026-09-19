@@ -42,6 +42,8 @@ public class BKPortalForcer implements ITeleporter {
     private final boolean hasFrame;
     private final boolean isStartup;
 
+    private static final BlockPos NEW_END_ARRIVAL = new BlockPos(100, 67, 0);
+
     public BKPortalForcer(ServerLevel level, boolean hasFrame) {
         this.level = level;
         this.hasFrame = hasFrame;
@@ -66,6 +68,10 @@ public class BKPortalForcer implements ITeleporter {
     @Nullable
     @Override
     public PortalInfo getPortalInfo(Entity entity, ServerLevel destinationLevel, Function<ServerLevel, PortalInfo> defaultPortalInfo) {
+        if (destinationLevel.dimension() == TheNewEndPortalBlock.destinationDimension()) {
+            return new PortalInfo(Vec3.atBottomCenterOf(NEW_END_ARRIVAL), Vec3.ZERO, entity.getYRot(), entity.getXRot());
+        }
+
         EntityAccessor entityAccessor = (EntityAccessor) entity;
         boolean isDestination = destinationLevel.dimension() == PortalBlock.destinationDimension();
 
