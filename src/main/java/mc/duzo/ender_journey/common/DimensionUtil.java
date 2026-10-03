@@ -51,7 +51,7 @@ public class DimensionUtil {
             buildEntry(buildItem("black_eye"),new BlockPos(31,54,-12)),
             buildEntry(buildItem("witch_eye"),new BlockPos(31,54,12)),
             buildEntry(buildItem("cold_eye"),new BlockPos(38,54,-9)),
-            buildEntry(buildItem("corrupted_eye"),new BlockPos(35,54,-12)),
+            buildEntry(buildItem("trader_eye"),new BlockPos(35,54,-12)),
             buildEntry(buildItem("lost_eye"),new BlockPos(40,54,-6)),
             buildEntry(buildItem("nether_eye"),new BlockPos(41,55,-3)),
             buildEntry(buildItem("rogue_eye"),new BlockPos(41,56,0)),
@@ -61,12 +61,12 @@ public class DimensionUtil {
             buildEntry(buildItem("magical_eye"),new BlockPos(35,54,12)),
             buildEntry(buildItem("undead_eye"),new BlockPos(33,52,0)),
             buildEntry(buildItem("exotic_eye"),new BlockPos(-31,54,12)),
-            buildEntry(buildItem("carminite_eye"),new BlockPos(-31,54,-12)),
-            buildEntry(buildItem("aurora_eye"),new BlockPos(-38,54,-9)),
+            buildEntry(buildItem("castle_eye"),new BlockPos(-31,54,-12)),
+            buildEntry(buildItem("spectral_eye"),new BlockPos(-38,54,-9)),
             buildEntry(buildItem("fiery_eye"),new BlockPos(-35,54,-12)),
             buildEntry(buildItem("abyss_eye"),new BlockPos(-40,54,-6)),
             buildEntry(buildItem("mech_eye"),new BlockPos(-41,55,-3)),
-            buildEntry(buildItem("monstrous_eye"),new BlockPos(-41,56,0)),
+            buildEntry(buildItem("forbidden_eye"),new BlockPos(-41,56,0)),
             buildEntry(buildItem("void_eye"),new BlockPos(-41,55,3)),
             buildEntry(buildItem("flame_eye"),new BlockPos(-40,54,6)),
             buildEntry(buildItem("parasite_eye"),new BlockPos(-38,54,9)),
@@ -77,11 +77,11 @@ public class DimensionUtil {
         return Map.entry(eye,pos);
     }
     public static final List<ResourceLocation> eyesLocation=List.of(build("black_eye"),
-            build("cold_eye"),build("corrupted_eye"),build("lost_eye"),build("nether_eye"),
+            build("cold_eye"),build("trader_eye"),build("lost_eye"),build("nether_eye"),
             build("rogue_eye"),build("cursed_eye"),build("evil_eye"),build("guardian_eye"),
             build("magical_eye"),build("witch_eye"),build("undead_eye"),build("exotic_eye"),
-            build("carminite_eye"),build("aurora_eye"),build("fiery_eye"),build("abyss_eye"),
-            build("mech_eye"),build("monstrous_eye"),build("void_eye"),build("flame_eye"),
+            build("castle_eye"),build("spectral_eye"),build("fiery_eye"),build("abyss_eye"),
+            build("mech_eye"),build("forbidden_eye"),build("void_eye"),build("flame_eye"),
             build("parasite_eye"),build("desert_eye"),build("sculk_eye"));
     public static ResourceLocation build(String name){
         return new ResourceLocation("endrem","main/"+name);
