@@ -366,7 +366,7 @@ public class RealmManager implements Savable {
 			checkAndGeneratePlatform(level);
 			tasks.add(()->{
 				if (ModList.get().isLoaded("bte_mobs")) {
-					spawnNpc5(level);
+					// El NPC5 ya no aparece en la sala de portales
 					spawnBlackSmith(level);
 					spawnDruid(level);
 					spawnWarlock(level);
