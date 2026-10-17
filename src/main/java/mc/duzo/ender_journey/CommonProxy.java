@@ -22,7 +22,6 @@ public class CommonProxy {
     public static void initBlocks(){
         if (blocksInitialized) return;
         blocksInitialized = true;
-        EndersJourney.LOGGER.info("[ENDERJOURNEY-DEBUG] initBlocks() running this session.");
 
         Events.queue.add(List.of(
                 new Vec3i(1,0,0),
@@ -211,7 +210,6 @@ public class CommonProxy {
                 add("beyondtheend:glowing_energy",5000+x,0,8+z);
             }
         }
-        EndersJourney.LOGGER.info("[ENDERJOURNEY-DEBUG] initBlocks() done. BLOCKS.size()={}, queue.size()={}", BLOCKS.size(), Events.queue.size());
     }
 
     private static void add(String id, int x, int y, int z) {

@@ -270,13 +270,11 @@ public class RealmManager implements Savable {
 				ServerLevel level = getDimension();
 				if (level != null) {
 					sessionColumnGenerated = true;
-					EndersJourney.LOGGER.info("[ENDERJOURNEY-DEBUG] Running placeColumn/checkAndGeneratePlatform this session. CommonProxy.BLOCKS size={}", CommonProxy.BLOCKS.size());
 					try {
 						placeColumn(level);
 						checkAndGeneratePlatform(level);
-						EndersJourney.LOGGER.info("[ENDERJOURNEY-DEBUG] placeColumn/checkAndGeneratePlatform finished without errors.");
 					} catch (Throwable t) {
-						EndersJourney.LOGGER.error("[ENDERJOURNEY-DEBUG] Exception in placeColumn/checkAndGeneratePlatform", t);
+						EndersJourney.LOGGER.error("[EJ] Exception in placeColumn/checkAndGeneratePlatform", t);
 					}
 				}
 			}
@@ -398,9 +396,6 @@ public class RealmManager implements Savable {
 					level.setBlock(placed.pos(), state, 3);
 				}
 				plataformPlaced = true;
-
-				BlockPos check = new BlockPos(5000, 0, 8);
-				EndersJourney.LOGGER.info("[ENDERJOURNEY-DEBUG] Readback immediately after placement at {}: {}", check, level.getBlockState(check));
 			}
 		}
 

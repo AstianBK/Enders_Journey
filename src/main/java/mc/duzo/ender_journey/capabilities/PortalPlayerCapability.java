@@ -371,7 +371,6 @@ public class PortalPlayerCapability implements PortalPlayer{
         if (!glowingEnergyBlockLookedUp) {
             glowingEnergyBlockLookedUp = true;
             glowingEnergyBlockCache = net.minecraftforge.registries.ForgeRegistries.BLOCKS.getValue(new net.minecraft.resources.ResourceLocation("beyondtheend", "glowing_energy"));
-            mc.duzo.ender_journey.EndersJourney.LOGGER.info("[ENDERJOURNEY-DEBUG] getGlowingEnergyBlock() resolved beyondtheend:glowing_energy to: {}", glowingEnergyBlockCache);
         }
         return glowingEnergyBlockCache;
     }
@@ -380,7 +379,7 @@ public class PortalPlayerCapability implements PortalPlayer{
         level.getChunk(x >> 4, z >> 4, ChunkStatus.FULL, true);
         net.minecraft.world.level.block.Block glowingEnergy = getGlowingEnergyBlock();
         if (glowingEnergy == null) {
-            mc.duzo.ender_journey.EndersJourney.LOGGER.warn("[ENDERJOURNEY-DEBUG] beyondtheend:glowing_energy not found in registry, skipping createChunkGlowing at ({},{},{})", x, y, z);
+            mc.duzo.ender_journey.EndersJourney.LOGGER.warn("[EJ] beyondtheend:glowing_energy not found in registry, skipping createChunkGlowing at ({},{},{})", x, y, z);
             return;
         }
         for (int x1 = -8 ; x1 < 8 ; x1++){
@@ -388,7 +387,6 @@ public class PortalPlayerCapability implements PortalPlayer{
                 level.setBlock(new BlockPos(x+x1,y,z+z1), glowingEnergy.defaultBlockState(),3);
             }
         }
-        mc.duzo.ender_journey.EndersJourney.LOGGER.info("[ENDERJOURNEY-DEBUG] createChunkGlowing readback at ({},{},{}): {}", x, y, z, level.getBlockState(new BlockPos(x,y,z)));
     }
 
 

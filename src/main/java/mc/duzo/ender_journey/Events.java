@@ -105,11 +105,9 @@ public class Events {
             });
         }
         boolean isEyeAdvancement = DimensionUtil.eyesLocation.contains(event.getAdvancement().getId());
-        EndersJourney.LOGGER.info("[ENDERJOURNEY-DEBUG] Advancement earned: {} | isEyeAdvancement={}", event.getAdvancement().getId(), isEyeAdvancement);
         if(isEyeAdvancement){
             PortalPlayer.get(event.getEntity()).ifPresent(portalPlayer -> {
                 boolean alreadyCounted = portalPlayer.getList().contains(event.getAdvancement().getId());
-                EndersJourney.LOGGER.info("[ENDERJOURNEY-DEBUG] alreadyCounted={}, currentEyesEarn={}, list={}", alreadyCounted, portalPlayer.getEyesEarn(), portalPlayer.getList());
                 if(!alreadyCounted){
                     portalPlayer.plusEye(event.getAdvancement().getId());
                     int currentEyeIndex = portalPlayer.getEyesEarn();
@@ -127,11 +125,9 @@ public class Events {
                     int chunksAdded = 0;
                     EnderEyeMilestoneEvent.PortalOpened portalOpened = EnderEyeMilestoneEvent.PortalOpened.NONE;
                     ServerLevel level=EndersJourney.getServer().getLevel(EnderDimensions.REALM_KEY);
-                    EndersJourney.LOGGER.info("[ENDERJOURNEY-DEBUG] eyes now={}, level!=null={}, queue.size() before poll={}", eyes, level!=null, queue.size());
                     if(level!=null){
                         storageUpgraded = placeOrReloadStorage(level,portalPlayer.getEyesEarn());
                         List<Vec3i> offsets = queue.poll();
-                        EndersJourney.LOGGER.info("[ENDERJOURNEY-DEBUG] queue.poll() returned: {}", offsets);
                         if (offsets!=null){
                             chunksAdded = offsets.size();
                             totalChunksUnlocked += chunksAdded;
@@ -351,9 +347,6 @@ public class Events {
             }
         } else if (serverPlayer.hasEffect(sacredPlace)) {
             serverPlayer.removeEffect(sacredPlace);
-            if (serverPlayer.tickCount % 20 == 0) {
-                EndersJourney.LOGGER.info("[ENDERJOURNEY-DEBUG] Removed sacred_place outside island (was re-applied by something else).");
-            }
         }
     }
 
