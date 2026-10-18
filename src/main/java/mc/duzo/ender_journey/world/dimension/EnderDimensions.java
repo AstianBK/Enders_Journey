@@ -27,7 +27,7 @@ public class EnderDimensions {
 
 	public static void teleport(LivingEntity entity, ServerLevel target, Vector3d pos, float yaw, float pitch) {
 		if (entity instanceof ServerPlayer player) {
-			target.getServer().execute(() -> teleportToWorld(player, target, pos, player.getYHeadRot(), player.getXRot()));
+			target.getServer().execute(() -> teleportToWorld(player, target, pos, yaw, pitch));
 			return;
 		}
 

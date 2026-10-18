@@ -99,7 +99,8 @@ public class RealmManager implements Savable {
 
 	public void teleport(LivingEntity entity) {
 		Vector3d vec = EndersJourney.getCentre(this.getStructure().getCentre());
-		EnderDimensions.teleport(entity, getDimension(), vec, entity.getYRot(), entity.getXRot());
+		// Primer spawn en el Realm: mirando al Este (yaw -90), hacia Anna Warhammer
+		EnderDimensions.teleport(entity, getDimension(), vec, -90.0F, 0.0F);
 	}
 
 	public static class Structure implements Savable {
