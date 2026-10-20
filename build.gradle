@@ -8,7 +8,7 @@ plugins {
 }
 
 group = "com.github.AstianBK"
-version = "1.0.14"
+version = "1.0.16"
 archivesBaseName = "enders_journey"
 
 java {
