@@ -28,6 +28,7 @@ import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.entity.Entity;
+import net.minecraft.world.entity.EntityType;
 import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.level.block.Blocks;
@@ -39,6 +40,7 @@ import net.minecraft.world.level.block.state.properties.BlockStateProperties;
 import net.minecraft.world.level.levelgen.structure.templatesystem.StructurePlaceSettings;
 import net.minecraft.world.level.levelgen.structure.templatesystem.StructureTemplate;
 import net.minecraftforge.fml.ModList;
+import net.minecraftforge.registries.ForgeRegistries;
 import org.jetbrains.annotations.Nullable;
 import tictim.paraglider.contents.Contents;
 
@@ -373,6 +375,7 @@ public class RealmManager implements Savable {
 					spawnWarlock(level);
 					spawnExplorer(level);
 				}
+				spawnTargetDummies(level);
 			});
 			placeSign(start, level);
 		}
@@ -440,6 +443,31 @@ public class RealmManager implements Savable {
 			entity.setAttachFace(Direction.EAST);
 			entity.setYRot(Direction.EAST.toYRot());
 			level.addFreshEntity(entity);
+		}
+
+		/** Target Dummies (MmmMmmMmmMmm) del campo de entrenamiento, junto a la forja de Anna, mirando al sur. */
+		private static final ResourceLocation TARGET_DUMMY = new ResourceLocation("dummmmmmy", "target_dummy");
+		private static final List<BlockPos> TARGET_DUMMY_POSITIONS = List.of(
+				new BlockPos(63, 131, -18),
+				new BlockPos(61, 131, -18)
+		);
+
+		public void spawnTargetDummies(ServerLevel level) {
+			// ENTITY_TYPES devuelve el cerdo si el id no existe, así que se comprueba antes
+			if (!ModList.get().isLoaded("dummmmmmy") || !ForgeRegistries.ENTITY_TYPES.containsKey(TARGET_DUMMY)) return;
+			EntityType<?> type = ForgeRegistries.ENTITY_TYPES.getValue(TARGET_DUMMY);
+			if (type == null) return;
+
+			float yaw = Direction.SOUTH.toYRot();
+			for (BlockPos pos : TARGET_DUMMY_POSITIONS) {
+				ensureChunkLoaded(level, pos);
+				Entity dummy = type.create(level);
+				if (dummy == null) continue;
+				dummy.moveTo(pos.getX() + 0.5D, pos.getY(), pos.getZ() + 0.5D, yaw, 0.0F);
+				dummy.setYHeadRot(yaw);
+				dummy.setYBodyRot(yaw);
+				level.addFreshEntity(dummy);
+			}
 		}
 
 		public void spawnBlackSmith(ServerLevel level) {
