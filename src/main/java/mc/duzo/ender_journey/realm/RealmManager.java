@@ -25,7 +25,13 @@ import net.minecraft.nbt.CompoundTag;
 import net.minecraft.nbt.ListTag;
 import net.minecraft.nbt.NbtUtils;
 import net.minecraft.resources.ResourceLocation;
+import net.minecraft.server.level.ChunkMap;
 import net.minecraft.server.level.ServerLevel;
+import net.minecraft.server.level.TicketType;
+import net.minecraft.world.level.ChunkPos;
+import net.minecraft.world.level.chunk.ChunkAccess;
+import net.minecraft.world.level.chunk.storage.ChunkSerializer;
+import net.minecraft.world.phys.AABB;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.EntityType;
@@ -123,6 +129,28 @@ public class RealmManager implements Savable {
 		private final Queue<Runnable> tasks = new ArrayDeque<>();
 		private boolean generating = false;
 		private static final int TASKS_PER_TICK = 2;
+
+		// --- Estado de sesion (NO se guarda en el .dat) ---
+		// isPlaced solo pasa a true cuando la estructura esta colocada Y sus chunks
+		// estan escritos en disco. Antes se marcaba al empezar a colocar, y el .dat
+		// (que se guarda en cada pausa) podia llegar al disco sin los chunks: tras un
+		// crash el Realm quedaba vacio para siempre.
+		private boolean integrityChecked = false;
+		private boolean npcsDone = false;
+		private final Set<Long> touchedChunks = new HashSet<>();
+		private static final int INTEGRITY_SAMPLES = 24;
+		private static final TicketType<ChunkPos> REALM_TICKET =
+				TicketType.create("ender_journey_realm", Comparator.comparingLong(ChunkPos::toLong));
+		// Posiciones de los NPC (mismas que en spawnX); sus chunks se mantienen cargados
+		// mientras se colocan para poder comprobar si el NPC ya existe.
+		private static final List<BlockPos> NPC_POSITIONS = List.of(
+				new BlockPos(62, 134, 0),   // Blacksmith
+				new BlockPos(-3, 129, 54),  // Druid
+				new BlockPos(-62, 134, 0),  // Warlock
+				new BlockPos(3, 132, -69),  // Explorer
+				new BlockPos(63, 131, -18), // Target dummies
+				new BlockPos(61, 131, -18)
+		);
 
 		public Structure(ResourceLocation structure, @Nullable BlockPos centre) {
 			this.structure = structure;
@@ -229,6 +257,7 @@ public class RealmManager implements Savable {
 			for (StructureTemplate.StructureBlockInfo info : blocks) {
 				if(info.state.isAir())continue;
 				BlockPos finalPos = origin.offset(info.pos);
+				touch(finalPos);
 				placed.add(new StructureTemplate.StructureBlockInfo(finalPos, info.state, info.nbt));
 			}
 
@@ -282,9 +311,15 @@ public class RealmManager implements Savable {
 				}
 			}
 
-			if (!this.isPlaced && !generating) {
-				this.place();
+			if (generating) return;
 
+			if (!this.isPlaced) {
+				this.place();
+				return;
+			}
+
+			if (!integrityChecked) {
+				this.checkIntegrity();
 			}
 		}
 
@@ -295,9 +330,15 @@ public class RealmManager implements Savable {
 		private void place(ServerLevel level, boolean inform) {
 			if (level == null ) return;
 
-			this.isPlaced = true;
+			// OJO: isPlaced ya NO se pone a true aqui. Se pone en finishGeneration(),
+			// cuando todos los bloques estan colocados y sus chunks escritos en disco.
+			this.generating = true;
+			this.npcsDone = false;
+			this.integrityChecked = true;
+			this.touchedChunks.clear();
 
 			long start = System.currentTimeMillis();
+			EndersJourney.LOGGER.info("[EJ] Placing realm structure...");
 
 			enqueueGeneration(level, start);
 		}
@@ -321,6 +362,7 @@ public class RealmManager implements Savable {
 		private void placeColumn(ServerLevel level) {
 			DimensionUtil.eyeItemForBlockPos.forEach((itemStack, pos) -> {
 				ensureChunkLoaded(level, pos);
+				touch(pos);
 				ColumnBlockEntity block = new ColumnBlockEntity(pos, BKBlocks.COLUMN.get().defaultBlockState());
 				level.setBlock(pos, block.getBlockState(), 3);
 
@@ -331,6 +373,7 @@ public class RealmManager implements Savable {
 			});
 
 			ensureChunkLoaded(level, new BlockPos(0, 50, 0));
+			touchArea(-9, -10, 9, 10);
 			for (BlockPos pos : BlockPos.betweenClosed(new BlockPos(-9, 50, -10), new BlockPos(9, 50, 10))) {
 				level.setBlock(pos, Blocks.END_STONE_BRICKS.defaultBlockState(), 3);
 			}
@@ -342,6 +385,9 @@ public class RealmManager implements Savable {
 			}
 
 			ensureChunkLoaded(level, new BlockPos(0, 89, 32));
+			touchArea(-2, 32, 2, 32);
+			touchArea(33, -3, 33, 3);
+			touchArea(-32, -4, -32, 3);
 			for (BlockPos pos : BlockPos.betweenClosed(new BlockPos(-2, 87, 32), new BlockPos(2, 92, 32))) {
 				if (level.isEmptyBlock(pos)) {
 					level.setBlock(pos, BKBlocks.PORTAL_OVERWORLD.get().defaultBlockState(), 3);
@@ -367,17 +413,181 @@ public class RealmManager implements Savable {
 			placeColumn(level);
 
 			checkAndGeneratePlatform(level);
-			tasks.add(()->{
-				if (ModList.get().isLoaded("bte_mobs")) {
-					// El NPC5 ya no aparece en la sala de portales
-					spawnBlackSmith(level);
-					spawnDruid(level);
-					spawnWarlock(level);
-					spawnExplorer(level);
+
+			// Mantener cargados los chunks de los NPC hasta terminar, para que sus
+			// entidades guardadas esten cargadas y no se dupliquen al reconstruir.
+			addNpcTickets(level);
+			final long npcDeadline = level.getGameTime() + 400L; // ~20 s como maximo
+			tasks.add(new Runnable() {
+				@Override
+				public void run() {
+					if (!npcEntitiesLoaded(level) && level.getGameTime() < npcDeadline) {
+						tasks.add(this); // aun no han cargado las entidades: reintentar
+						return;
+					}
+					if (ModList.get().isLoaded("bte_mobs")) {
+						// El NPC5 ya no aparece en la sala de portales
+						// Solo se crea cada NPC si no existe ya (reconstruccion tras un crash)
+						if (!hasEntityNear(level, BteMobsEntities.BLACKSMITH_ENTITY.get(), 62.5, 134, 0.5))
+							spawnBlackSmith(level);
+						if (!hasEntityNear(level, BteMobsEntities.DRUID_ENTITY.get(), -2.5, 129, 53.5))
+							spawnDruid(level);
+						if (!hasEntityNear(level, BteMobsEntities.WARLOCK_ENTITY.get(), -62.5, 134, 0.5))
+							spawnWarlock(level);
+						if (!hasEntityNear(level, BteMobsEntities.EXPLORER_ENTITY.get(), 3.5, 133, -69.5))
+							spawnExplorer(level);
+					}
+					spawnTargetDummies(level); // ya comprueba uno a uno si existen
+					npcsDone = true;
 				}
-				spawnTargetDummies(level);
 			});
 			placeSign(start, level);
+
+			// Ultima tarea de la cola: escribir los chunks a disco y SOLO entonces
+			// marcar isPlaced. Espera a que la tarea de NPCs haya terminado.
+			tasks.add(new Runnable() {
+				@Override
+				public void run() {
+					if (!npcsDone) {
+						tasks.add(this);
+						return;
+					}
+					finishGeneration(level, start);
+				}
+			});
+		}
+
+		private void finishGeneration(ServerLevel level, long start) {
+			int saved = -1;
+			try {
+				saved = persistTouchedChunks(level);
+			} catch (Throwable t) {
+				EndersJourney.LOGGER.error("[EJ] Could not force-save the realm chunks", t);
+			}
+			removeNpcTickets(level);
+
+			this.isPlaced = true;
+			this.generating = false;
+
+			EndersJourney.LOGGER.info("[EJ] Realm structure placed in " + (System.currentTimeMillis() - start)
+					+ "ms, " + saved + "/" + touchedChunks.size() + " chunks written to disk");
+			touchedChunks.clear();
+		}
+
+		/**
+		 * Escribe a disco, de forma sincrona, todos los chunks que ha tocado la
+		 * generacion. Asi, cuando isPlaced=true llegue al .dat, los bloques ya
+		 * estan en los .mca aunque el juego crashee justo despues.
+		 * Los chunks que ya se han descargado ya estan en la cola de escritura;
+		 * flushWorker() espera tambien por ellos.
+		 */
+		private int persistTouchedChunks(ServerLevel level) {
+			ChunkMap chunkMap = level.getChunkSource().chunkMap;
+			int saved = 0;
+			for (long key : touchedChunks) {
+				ChunkPos cp = new ChunkPos(key);
+				ChunkAccess chunk = level.getChunkSource().getChunk(cp.x, cp.z, ChunkStatus.FULL, false);
+				if (chunk == null) continue;
+				chunkMap.write(cp, ChunkSerializer.write(level, chunk));
+				saved++;
+			}
+			chunkMap.flushWorker();
+			return saved;
+		}
+
+		/**
+		 * Se ejecuta una vez por sesion si isPlaced=true. Comprueba unos cuantos
+		 * bloques de "spawn" e "island" en el mundo; si casi ninguno esta, el
+		 * Realm se perdio (crash antes de guardar los chunks) y se reconstruye.
+		 */
+		private void checkIntegrity() {
+			ServerLevel level = getDimension();
+			if (level == null) return;
+			this.integrityChecked = true;
+
+			int[] result = new int[2]; // [0] encontrados, [1] comprobados
+			try {
+				sampleComponent(level, 0, 130, 0, new ResourceLocation(EndersJourney.MODID, "spawn"), new StructurePlaceSettings(), result);
+				sampleComponent(level, 4, -1, -8, new ResourceLocation(EndersJourney.MODID, "island"), new StructurePlaceSettings(), result);
+			} catch (Throwable t) {
+				EndersJourney.LOGGER.error("[EJ] Realm integrity check failed", t);
+				return;
+			}
+			if (result[1] == 0) return;
+
+			if (result[0] * 4 < result[1]) {
+				EndersJourney.LOGGER.warn("[EJ] Realm is marked as placed but only " + result[0] + "/" + result[1]
+						+ " sample blocks exist (world not saved before a crash?). Rebuilding the realm.");
+				this.place(level, false);
+			} else {
+				EndersJourney.LOGGER.info("[EJ] Realm integrity OK (" + result[0] + "/" + result[1] + " sample blocks)");
+			}
+		}
+
+		private void sampleComponent(ServerLevel level, int addX, int height, int addZ, ResourceLocation location, StructurePlaceSettings settings, int[] result) {
+			StructureTemplate template = this.findStructure(location).orElse(null);
+			if (template == null || template.palettes.isEmpty()) return;
+
+			List<StructureTemplate.StructureBlockInfo> blocks = settings.getRandomPalette(template.palettes, BlockPos.ZERO).blocks();
+			Vec3i size = template.getSize();
+			BlockPos origin = new BlockPos(-size.getX() / 2 + addX, height, -size.getZ() / 2 + addZ);
+
+			List<StructureTemplate.StructureBlockInfo> solid = new ArrayList<>();
+			for (StructureTemplate.StructureBlockInfo info : blocks) {
+				if (info.state.isAir() || info.state.is(Blocks.STRUCTURE_VOID) || info.nbt != null) continue;
+				solid.add(info);
+			}
+			if (solid.isEmpty()) return;
+
+			int samples = Math.min(INTEGRITY_SAMPLES, solid.size());
+			for (int i = 0; i < samples; i++) {
+				StructureTemplate.StructureBlockInfo info = solid.get((int) ((long) i * solid.size() / samples));
+				BlockPos pos = origin.offset(info.pos);
+				ensureChunkLoaded(level, pos);
+				result[1]++;
+				if (level.getBlockState(pos).is(info.state.getBlock())) result[0]++;
+			}
+		}
+
+		private void touch(BlockPos pos) {
+			touchedChunks.add(ChunkPos.asLong(pos.getX() >> 4, pos.getZ() >> 4));
+		}
+
+		private void touchArea(int minX, int minZ, int maxX, int maxZ) {
+			for (int cx = minX >> 4; cx <= maxX >> 4; cx++)
+				for (int cz = minZ >> 4; cz <= maxZ >> 4; cz++)
+					touchedChunks.add(ChunkPos.asLong(cx, cz));
+		}
+
+		private void addNpcTickets(ServerLevel level) {
+			for (BlockPos p : NPC_POSITIONS) {
+				ChunkPos cp = new ChunkPos(p);
+				touch(p);
+				level.getChunkSource().addRegionTicket(REALM_TICKET, cp, 2, cp);
+			}
+		}
+
+		private void removeNpcTickets(ServerLevel level) {
+			for (BlockPos p : NPC_POSITIONS) {
+				ChunkPos cp = new ChunkPos(p);
+				level.getChunkSource().removeRegionTicket(REALM_TICKET, cp, 2, cp);
+			}
+		}
+
+		private static boolean npcEntitiesLoaded(ServerLevel level) {
+			for (BlockPos p : NPC_POSITIONS) {
+				if (!level.areEntitiesLoaded(ChunkPos.asLong(p.getX() >> 4, p.getZ() >> 4))) return false;
+			}
+			return true;
+		}
+
+		private static <T extends Entity> boolean hasEntityNear(ServerLevel level, EntityType<T> type, double x, double y, double z) {
+			return hasEntityNear(level, type, x, y, z, 8.0D);
+		}
+
+		private static <T extends Entity> boolean hasEntityNear(ServerLevel level, EntityType<T> type, double x, double y, double z, double r) {
+			AABB box = new AABB(x - r, y - r, z - r, x + r, y + r, z + r);
+			return !level.getEntities(type, box, e -> true).isEmpty();
 		}
 
 
@@ -397,6 +607,7 @@ public class RealmManager implements Savable {
 					}
 
 					ensureChunkLoaded(level, placed.pos());
+					touch(placed.pos());
 					level.setBlock(placed.pos(), state, 3);
 				}
 				plataformPlaced = true;
@@ -461,6 +672,8 @@ public class RealmManager implements Savable {
 			float yaw = Direction.SOUTH.toYRot();
 			for (BlockPos pos : TARGET_DUMMY_POSITIONS) {
 				ensureChunkLoaded(level, pos);
+				// No duplicar si ya existe (reconstruccion tras un crash)
+				if (hasEntityNear(level, type, pos.getX() + 0.5D, pos.getY(), pos.getZ() + 0.5D, 1.0D)) continue;
 				Entity dummy = type.create(level);
 				if (dummy == null) continue;
 				dummy.moveTo(pos.getX() + 0.5D, pos.getY(), pos.getZ() + 0.5D, yaw, 0.0F);
