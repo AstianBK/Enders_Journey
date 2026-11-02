@@ -83,6 +83,12 @@ public class DimensionUtil {
             build("castle_eye"),build("spectral_eye"),build("fiery_eye"),build("abyss_eye"),
             build("mech_eye"),build("forbidden_eye"),build("void_eye"),build("flame_eye"),
             build("parasite_eye"),build("desert_eye"),build("sculk_eye"));
+    /**
+     * Los mismos ids en un HashSet. getEyesEarn recorre los ~6000 advancements del jugador y se ejecuta cada vez
+     * que se revoca cualquier advancement (hay advancements que se revocan solos al cambiar los efectos del
+     * jugador), dos veces por revocacion: con la lista eran ~24 comparaciones por advancement.
+     */
+    private static final java.util.Set<ResourceLocation> EYES_SET = java.util.Set.copyOf(eyesLocation);
     public static ResourceLocation build(String name){
         return new ResourceLocation("endrem","main/"+name);
     }
@@ -101,7 +107,7 @@ public class DimensionUtil {
         List<Advancement> advancements=new ArrayList<>();
         List<ResourceLocation> resourceLocations=new ArrayList<>();
         map.forEach(((advancement, advancementProgress) -> {
-            if(eyesLocation.contains(advancement.getId()) && advancementProgress.isDone()){
+            if(EYES_SET.contains(advancement.getId()) && advancementProgress.isDone()){
                 advancements.add(advancement);
                 resourceLocations.add(advancement.getId());
             }
