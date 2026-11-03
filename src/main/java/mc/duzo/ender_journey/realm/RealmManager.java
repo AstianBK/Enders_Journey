@@ -128,7 +128,35 @@ public class RealmManager implements Savable {
 		);
 		private final Queue<Runnable> tasks = new ArrayDeque<>();
 		private boolean generating = false;
+		/**
+		 * Tareas minimas por llamada a tick() (lo que se hacia siempre). tick() se llama una vez por cada
+		 * dimension cargada en cada tick del servidor, asi que nunca va mas lento que antes.
+		 */
 		private static final int TASKS_PER_TICK = 2;
+		/**
+		 * Ademas de las minimas, se siguen ejecutando tareas mientras el trabajo de este tick del servidor no
+		 * pase de este tiempo. Con jugadores conectados se deja margen para que el juego siga fluido; sin
+		 * nadie conectado (creando el mundo) nadie nota los tirones. Asi cada PC coloca lo que puede: uno
+		 * potente termina mucho antes y uno flojo no se congela mas que antes. El orden de las tareas no
+		 * cambia, asi que el Realm queda exactamente igual.
+		 */
+		private static final long BUDGET_WITH_PLAYERS_NS = 40_000_000L;
+		private static final long BUDGET_NO_PLAYERS_NS = 250_000_000L;
+		/** Tick del servidor al que corresponde budgetUsedNs (tick() se llama varias veces por tick). */
+		private int budgetTick = Integer.MIN_VALUE;
+		private long budgetUsedNs;
+
+		// --- Medicion de la generacion (solo para el log) ---
+		private long genStartNs;
+		private int genStartServerTick;
+		private int workTicks;
+		private long workNs;
+		private long maxTickWorkNs;
+		private int blocksQueued;
+		private int blocksPlaced;
+		private int pendingBlockBatches;
+		private long blocksDoneNs;
+		private long npcsDoneNs;
 
 		// --- Estado de sesion (NO se guarda en el .dat) ---
 		// isPlaced solo pasa a true cuando la estructura esta colocada Y sus chunks
@@ -262,12 +290,15 @@ public class RealmManager implements Savable {
 			}
 
 			int batchSize = 1500;
+			blocksQueued += placed.size();
 
 			for (int i = 0; i < placed.size(); i += batchSize) {
 				int start = i;
+				pendingBlockBatches++;
 
 				tasks.add(() -> {
-					for (int j = start; j < start + batchSize && j < placed.size(); j++) {
+					int end = Math.min(start + batchSize, placed.size());
+					for (int j = start; j < end; j++) {
 						StructureTemplate.StructureBlockInfo info = placed.get(j);
 
 
@@ -280,6 +311,8 @@ public class RealmManager implements Savable {
 							}
 						}
 					}
+					blocksPlaced += end - start;
+					if (--pendingBlockBatches == 0) blocksDoneNs = System.nanoTime();
 				});
 			}
 		}
@@ -337,6 +370,17 @@ public class RealmManager implements Savable {
 			this.integrityChecked = true;
 			this.touchedChunks.clear();
 
+			this.genStartNs = System.nanoTime();
+			this.genStartServerTick = level.getServer().getTickCount();
+			this.workTicks = 0;
+			this.workNs = 0;
+			this.maxTickWorkNs = 0;
+			this.blocksQueued = 0;
+			this.blocksPlaced = 0;
+			this.pendingBlockBatches = 0;
+			this.blocksDoneNs = 0;
+			this.npcsDoneNs = 0;
+
 			long start = System.currentTimeMillis();
 			EndersJourney.LOGGER.info("[EJ] Placing realm structure...");
 
@@ -344,13 +388,32 @@ public class RealmManager implements Savable {
 		}
 
 		public void tick() {
+			if (tasks.isEmpty()) return;
 
-			for (int i = 0; i < TASKS_PER_TICK; i++) {
+			MinecraftServer server = EndersJourney.getServer();
+			int serverTick = server != null ? server.getTickCount() : 0;
+			if (serverTick != budgetTick) {
+				budgetTick = serverTick;
+				budgetUsedNs = 0;
+				if (generating) workTicks++;
+			}
+			long budget = server != null && server.getPlayerCount() > 0 ? BUDGET_WITH_PLAYERS_NS : BUDGET_NO_PLAYERS_NS;
+
+			// Solo las tareas que ya estaban en la cola: las que se vuelven a encolar (esperar a los NPC,
+			// terminar) se ejecutan en la siguiente llamada, como antes.
+			int limit = tasks.size();
+			long t0 = System.nanoTime();
+			for (int i = 0; i < limit; i++) {
+				if (i >= TASKS_PER_TICK && budgetUsedNs + (System.nanoTime() - t0) >= budget) break;
 				Runnable task = tasks.poll();
-				if (task == null) {
-					return;
-				}
+				if (task == null) break;
 				task.run();
+			}
+			long spent = System.nanoTime() - t0;
+			budgetUsedNs += spent;
+			if (generating) {
+				workNs += spent;
+				maxTickWorkNs = Math.max(maxTickWorkNs, budgetUsedNs);
 			}
 		}
 
@@ -439,6 +502,7 @@ public class RealmManager implements Savable {
 					}
 					spawnTargetDummies(level); // ya comprueba uno a uno si existen
 					npcsDone = true;
+					npcsDoneNs = System.nanoTime();
 				}
 			});
 			placeSign(start, level);
@@ -459,11 +523,14 @@ public class RealmManager implements Savable {
 
 		private void finishGeneration(ServerLevel level, long start) {
 			int saved = -1;
+			long persistStart = System.nanoTime();
 			try {
 				saved = persistTouchedChunks(level);
 			} catch (Throwable t) {
 				EndersJourney.LOGGER.error("[EJ] Could not force-save the realm chunks", t);
 			}
+			long persistNs = System.nanoTime() - persistStart;
+			logGenerationStats(level, persistNs);
 			removeNpcTickets(level);
 
 			this.isPlaced = true;
@@ -472,6 +539,27 @@ public class RealmManager implements Savable {
 			EndersJourney.LOGGER.info("[EJ] Realm structure placed in " + (System.currentTimeMillis() - start)
 					+ "ms, " + saved + "/" + touchedChunks.size() + " chunks written to disk");
 			touchedChunks.clear();
+		}
+
+		/**
+		 * Desglose de la generacion para saber donde se va el tiempo: colocar bloques, esperar a los NPC,
+		 * guardar los chunks, y cuanto del tick del servidor ha sido trabajo de la generacion.
+		 */
+		private void logGenerationStats(ServerLevel level, long persistNs) {
+			long now = System.nanoTime();
+			int serverTicks = level.getServer().getTickCount() - genStartServerTick;
+			long wallMs = (now - genStartNs) / 1_000_000L;
+			EndersJourney.LOGGER.info(String.format(java.util.Locale.ROOT,
+					"[EJ] Realm generation: %d/%d blocks placed after %d ms, NPCs ready after %d ms, chunk save %d ms, total %d ms",
+					blocksPlaced, blocksQueued,
+					blocksDoneNs > 0 ? (blocksDoneNs - genStartNs) / 1_000_000L : -1L,
+					npcsDoneNs > 0 ? (npcsDoneNs - genStartNs) / 1_000_000L : -1L,
+					persistNs / 1_000_000L, wallMs));
+			EndersJourney.LOGGER.info(String.format(java.util.Locale.ROOT,
+					"[EJ] Realm generation: %d server ticks (%.1f ms per tick on average), %d with work; realm work %d ms (%.1f ms per tick on average, max %.1f ms); players online at the end: %d",
+					serverTicks, serverTicks > 0 ? (double) wallMs / serverTicks : 0.0D, workTicks,
+					workNs / 1_000_000L, workTicks > 0 ? workNs / 1_000_000.0D / workTicks : 0.0D,
+					maxTickWorkNs / 1_000_000.0D, level.getServer().getPlayerCount()));
 		}
 
 		/**
